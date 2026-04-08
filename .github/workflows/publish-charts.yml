@@ -1,0 +1,82 @@
+name: Release Helm Charts
+
+on:
+  push:
+    # Matches any tag of the form <chart-name>/v<semver>, e.g. database/v0.2.0
+    # The chart-name segment must match the `name:` field in that chart's Chart.yaml.
+    tags:
+      - "*/v*"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # ── Resolve which chart this tag targets ────────────────────────────────────
+  setup:
+    name: Resolve chart from tag
+    runs-on: ubuntu-latest
+    outputs:
+      chart_dir:  ${{ steps.resolve.outputs.chart_dir }}
+      chart_name: ${{ steps.resolve.outputs.chart_name }}
+      version:    ${{ steps.resolve.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve chart metadata from tag
+        id: resolve
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"   # e.g. database/v0.2.0
+          CHART_NAME="${TAG%/v*}"          # e.g. database
+          VERSION="${TAG#*/v}"             # e.g. 0.2.0
+
+          # Find the chart directory by matching the `name:` field in Chart.yaml.
+          # Works regardless of how deeply nested or named the directory is.
+          CHART_DIR=$(grep -rl "^name: ${CHART_NAME}$" --include="Chart.yaml" . \
+            | head -1 \
+            | xargs dirname)
+
+          if [ -z "$CHART_DIR" ]; then
+            echo "No Chart.yaml found with name: ${CHART_NAME}" >&2
+            exit 1
+          fi
+
+          echo "chart_dir=$CHART_DIR"   >> "$GITHUB_OUTPUT"
+          echo "chart_name=$CHART_NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION"       >> "$GITHUB_OUTPUT"
+
+  # ── Lint, package, and push ─────────────────────────────────────────────────
+  release:
+    name: Release ${{ needs.setup.outputs.chart_name }} ${{ needs.setup.outputs.version }}
+    runs-on: ubuntu-latest
+    needs: setup
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Lint chart
+        run: helm lint "${{ needs.setup.outputs.chart_dir }}"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package chart
+        run: |
+          helm package "${{ needs.setup.outputs.chart_dir }}" \
+            --version "${{ needs.setup.outputs.version }}"
+
+      - name: Push chart to GHCR
+        run: |
+          helm push \
+            "${{ needs.setup.outputs.chart_name }}-${{ needs.setup.outputs.version }}.tgz" \
+            "oci://ghcr.io/${{ github.repository_owner }}"
