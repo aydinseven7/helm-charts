@@ -5,7 +5,7 @@ A Helm chart for deploying the Immich Machine Learning service as a standalone w
 ## TL;DR
 
 ```bash
-helm install immich-ml ./immich-ml-helper-chart
+helm install immich ./immich-ml-helper-chart
 ```
 
 ## Introduction
@@ -24,7 +24,7 @@ The ML service provides **CLIP-based smart search** and **facial recognition** f
 ## Installing the Chart
 
 ```bash
-helm install my-release ./immich-ml-helper-chart
+helm install immich ./immich-ml-helper-chart
 ```
 
 The command deploys the ML service with the default configuration. See the [Parameters](#parameters) section for customisation options.
@@ -32,58 +32,63 @@ The command deploys the ML service with the default configuration. See the [Para
 ## Uninstalling the Chart
 
 ```bash
-helm uninstall my-release
+helm uninstall immich
 ```
 
 > **Note:** The model-cache PersistentVolumeClaim is **not** deleted automatically. To remove it:
 > ```bash
-> kubectl delete pvc my-release-ml-pvc
+> kubectl delete pvc immich-ml-pvc
 > ```
 
 ## Parameters
 
-### Machine Learning parameters
+### Image parameters
 
-| Name                              | Description                                              | Value                                            |
-|-----------------------------------|----------------------------------------------------------|--------------------------------------------------|
-| `machineLearning.enabled`         | Deploy the Machine Learning service                      | `true`                                           |
-| `machineLearning.image.repository`| Container image repository                               | `ghcr.io/immich-app/immich-machine-learning`     |
-| `machineLearning.image.tag`       | Container image tag                                      | `v2.6.3`                                         |
-| `machineLearning.env`             | Extra environment variables (map of key/value pairs)     | `{}`                                             |
+| Name               | Description                                                  | Value                                        |
+|--------------------|--------------------------------------------------------------|----------------------------------------------|
+| `image.repository` | Container image repository                                   | `ghcr.io/immich-app/immich-machine-learning` |
+| `image.tag`        | Container image tag                                          | `v2.6.3`                                     |
 
-### Machine Learning Service parameters
+### Environment parameters
 
-| Name                                    | Description                                                   | Value       |
-|-----------------------------------------|---------------------------------------------------------------|-------------|
-| `machineLearning.service.type`          | Kubernetes Service type                                       | `ClusterIP` |
-| `machineLearning.service.port`          | Service port                                                  | `3003`      |
-| `machineLearning.service.targetPort`    | Port the ML process listens on inside the container           | `3003`      |
-| `machineLearning.service.nodePort`      | NodePort to expose when `service.type=NodePort` (optional)    | `""`        |
+| Name  | Description                                              | Value |
+|-------|----------------------------------------------------------|-------|
+| `env` | Extra environment variables (map of key/value pairs)     | `{}`  |
 
-### Machine Learning Persistence parameters
+### Service parameters
 
-| Name                                         | Description                                                       | Value           |
-|----------------------------------------------|-------------------------------------------------------------------|-----------------|
-| `machineLearning.persistence.enabled`        | Enable a PersistentVolumeClaim for the model cache                | `true`          |
-| `machineLearning.persistence.storageClass`   | StorageClass for the PVC (`""` uses the cluster default)          | `""`            |
-| `machineLearning.persistence.accessMode`     | PVC access mode                                                   | `ReadWriteOnce` |
-| `machineLearning.persistence.size`           | Size of the model-cache PVC                                       | `10Gi`          |
+| Name                 | Description                                                   | Value       |
+|----------------------|---------------------------------------------------------------|-------------|
+| `service.type`       | Kubernetes Service type                                       | `ClusterIP` |
+| `service.port`       | Service port                                                  | `3003`      |
+| `service.targetPort` | Port the ML process listens on inside the container           | `3003`      |
+| `service.nodePort`   | NodePort to expose when `service.type=NodePort` (optional)    | `""`        |
 
-### Machine Learning Resource parameters
+### Persistence parameters
 
-| Name                                          | Description        | Value   |
-|-----------------------------------------------|--------------------|---------|
-| `machineLearning.resources.limits.cpu`        | CPU limit          | `2`     |
-| `machineLearning.resources.limits.memory`     | Memory limit       | `4Gi`   |
-| `machineLearning.resources.requests.cpu`      | CPU request        | `10m`   |
-| `machineLearning.resources.requests.memory`   | Memory request     | `500Mi` |
+| Name                       | Description                                                       | Value           |
+|----------------------------|-------------------------------------------------------------------|-----------------|
+| `persistence.enabled`      | Enable a PersistentVolumeClaim for the model cache                | `true`          |
+| `persistence.storageClass` | StorageClass for the PVC (`""` uses the cluster default)          | `""`            |
+| `persistence.accessMode`   | PVC access mode                                                   | `ReadWriteOnce` |
+| `persistence.size`         | Size of the model-cache PVC                                       | `10Gi`          |
+
+### Resource parameters
+
+| Name                        | Description    | Value   |
+|-----------------------------|----------------|---------|
+| `resources.limits.cpu`      | CPU limit      | `4`     |
+| `resources.limits.memory`   | Memory limit   | `8Gi`   |
+| `resources.requests.cpu`    | CPU request    | `10m`   |
+| `resources.requests.memory` | Memory request | `500Mi` |
 
 ### Scheduling parameters
 
-| Name                               | Description                                                                   | Value |
-|------------------------------------|-------------------------------------------------------------------------------|-------|
-| `machineLearning.nodeSelector`     | Node labels for pod assignment. Leave `{}` to allow any node.                 | `{}`  |
-| `machineLearning.tolerations`      | Tolerations for pod scheduling (array)                                        | `[]`  |
+| Name           | Description                                                                   | Value |
+|----------------|-------------------------------------------------------------------------------|-------|
+| `nodeSelector` | Node labels for pod assignment. Leave `{}` to allow any node.                 | `{}`  |
+| `affinity`     | Affinity rules for pod scheduling                                             | `{}`  |
+| `tolerations`  | Tolerations for pod scheduling (array)                                        | `[]`  |
 
 ## Configuration and installation details
 
@@ -96,9 +101,8 @@ Without a persistent volume the ML service re-downloads all models on every rest
 To enable GPU-accelerated inference, supply an extended image variant and configure the appropriate backend. See the [Immich hardware acceleration docs](https://immich.app/docs/features/ml-hardware-acceleration) for the full list of supported backends (`cuda`, `rocm`, `openvino`, `armnn`, `rknn`).
 
 ```yaml
-machineLearning:
-  image:
-    tag: "v2.6.3-cuda"
+image:
+  tag: "v2.6.3-cuda"
   # Mount the extended compose-style file for your runtime:
   # extends:
   #   file: hwaccel.ml.yml
@@ -110,9 +114,8 @@ machineLearning:
 Machine learning workloads require `amd64` by default. If your cluster is mixed-architecture, use `nodeSelector`:
 
 ```yaml
-machineLearning:
-  nodeSelector:
-    kubernetes.io/arch: amd64
+nodeSelector:
+  kubernetes.io/arch: amd64
 ```
 
 ### Exposing the service outside the cluster
@@ -120,16 +123,17 @@ machineLearning:
 The default `ClusterIP` type is sufficient when the Immich server is in the same cluster. To expose the service externally via a static port, set:
 
 ```yaml
-machineLearning:
-  service:
-    type: NodePort
-    nodePort: 32003
+service:
+  type: NodePort
+  nodePort: 32003
 ```
 
 ### Service DNS name
 
-The chart creates a Service named `<release-name>-ml-svc`. Configure the Immich server to reach it via:
+The chart creates a Service named `<release-name>-ml-svc`. When installing with the recommended release name `immich` (as shown in the TL;DR), the DNS name becomes:
 
 ```
-<release-name>-ml-svc.<namespace>.svc.cluster.local:3003
+immich-ml-svc.<namespace>.svc.cluster.local:3003
 ```
+
+Configure the Immich server's ML URL to match this address.

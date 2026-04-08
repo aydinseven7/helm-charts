@@ -117,6 +117,14 @@ Credentials are sourced from a Kubernetes Secret. The fields below tell the char
 | `resources.requests.cpu`    | CPU request    | `10m`  |
 | `resources.requests.memory` | Memory request | `25Mi` |
 
+### Scheduling parameters
+
+| Name           | Description                                                                   | Value |
+|----------------|-------------------------------------------------------------------------------|-------|
+| `nodeSelector` | Node labels for Immich server pod assignment. Leave `{}` to allow any node.   | `{}`  |
+| `affinity`     | Affinity rules for server pod scheduling                                      | `{}`  |
+| `tolerations`  | Tolerations for server pod scheduling (array)                                 | `[]`  |
+
 ### Machine Learning parameters
 
 | Name                                         | Description                                                         | Value                                        |
@@ -126,6 +134,8 @@ Credentials are sourced from a Kubernetes Secret. The fields below tell the char
 | `machineLearning.image.tag`                  | ML container image tag                                              | `v2.6.3`                                     |
 | `machineLearning.env`                        | Extra environment variables for the ML container                    | `{}`                                         |
 | `machineLearning.nodeSelector`               | Node labels for ML pod assignment                                   | `{}`                                         |
+| `machineLearning.affinity`                   | Affinity rules for ML pod scheduling                                | `{}`                                         |
+| `machineLearning.tolerations`                | Tolerations for ML pod scheduling (array)                           | `[]`                                         |
 | `machineLearning.persistence.enabled`        | Enable a PersistentVolumeClaim for the ML model cache               | `true`                                       |
 | `machineLearning.persistence.storageClass`   | StorageClass for the model-cache PVC (`""` uses the cluster default)| `""`                                         |
 | `machineLearning.persistence.accessMode`     | PVC access mode                                                     | `ReadWriteOnce`                              |

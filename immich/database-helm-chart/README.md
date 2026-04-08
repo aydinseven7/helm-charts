@@ -9,7 +9,7 @@ kubectl create secret generic postgres-secret \
   --from-literal=username=immich \
   --from-literal=password=changeme
 
-helm install immich-db ./database-helm-chart
+helm install immich ./database-helm-chart
 ```
 
 ## Introduction
@@ -89,6 +89,8 @@ Credentials are sourced from a Kubernetes Secret. The fields below tell the char
 | Name           | Description                                                              | Value |
 |----------------|--------------------------------------------------------------------------|-------|
 | `nodeSelector` | Node labels for pod assignment. Leave `{}` to allow any node.            | `{}`  |
+| `affinity`     | Affinity rules for pod scheduling                                        | `{}`  |
+| `tolerations`  | Tolerations for pod scheduling (array)                                   | `[]`  |
 
 ## Configuration and installation details
 
@@ -115,7 +117,7 @@ nodeSelector:
 
 ### Service DNS name
 
-The chart creates a `ClusterIP` Service named `<release-name>-db` on port `5432`. When installing with the recommended release name `immich-db`, the DNS name becomes:
+The chart creates a `ClusterIP` Service named `<release-name>-db` on port `5432`. When installing with the recommended release name `immich` (as shown in the TL;DR), the DNS name becomes:
 
 ```
 immich-db.default.svc.cluster.local
