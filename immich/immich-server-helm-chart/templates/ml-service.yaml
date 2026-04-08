@@ -1,0 +1,18 @@
+{{- if .Values.machineLearning.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "immich-server.fullname" . }}-ml-svc
+  labels:
+    {{- include "immich-server.labels" . | nindent 4 }}
+    app.kubernetes.io/component: machine-learning
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3003
+      targetPort: 3003
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "immich-ml.selectorLabels" . | nindent 4 }}
+{{- end }}

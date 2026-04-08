@@ -1,0 +1,13 @@
+apiVersion: v2
+name: immich
+version: 0.1.0
+description: A Helm chart for deploying the Immich server and Machine Learning components
+maintainers:
+  - name: aydinseven7
+keywords:
+  - immich
+  - server
+home: https://immich.app
+sources:
+  - https://github.com/immich-app/immich
+dependencies: []

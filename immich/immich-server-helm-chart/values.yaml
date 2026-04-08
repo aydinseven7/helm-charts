@@ -1,0 +1,265 @@
+## @section Image parameters
+
+## @param image.repository Immich server image repository
+## @param image.tag Immich server image tag
+## Check https://github.com/immich-app/immich/releases for available tags.
+##
+image:
+  repository: ghcr.io/immich-app/immich-server
+  tag: "v2.6.3"
+
+## @section External dependency parameters
+
+## @param databaseHost Kubernetes DNS name of the PostgreSQL Service
+## Must match the Service name of your PostgreSQL deployment in the same namespace.
+## If you used the companion database chart with release name "immich", the
+## Service will be named "immich-db".
+##
+databaseHost: "immich-db"
+
+## @param redisHost Kubernetes DNS name of the Redis Service
+## If you installed Redis via the Bitnami chart, the default Service name is "redis-master".
+##
+redisHost: "redis-master"
+
+## @param databaseName Name of the PostgreSQL database Immich should connect to
+##
+databaseName: immich
+
+## @section PostgreSQL credential parameters
+##
+## Credentials are read from a pre-existing Kubernetes Secret so that
+## plaintext passwords never appear in values files or Helm releases.
+##
+## Create the Secret before installing this chart:
+##   kubectl create secret generic postgres-secret \
+##     --from-literal=username=immich \
+##     --from-literal=password=changeme
+##
+## @param postgresUser.secretName Name of the Secret containing the PostgreSQL username
+## @param postgresUser.key Key within the Secret that holds the username value
+##
+postgresUser:
+  secretName: postgres-secret
+  key: username
+
+## @param postgresPassword.secretName Name of the Secret containing the PostgreSQL password
+## @param postgresPassword.key Key within the Secret that holds the password value
+##
+postgresPassword:
+  secretName: postgres-secret
+  key: password
+
+## @section Immich environment parameters
+
+## @param env.uploadLocation Path inside the container where uploaded media is stored
+## Must match the mountPath of the upload PersistentVolumeClaim.
+## @param env.loglevel Log verbosity level
+## One of: verbose | debug | log | warn | error
+##
+env:
+  uploadLocation: /usr/src/app/upload
+  loglevel: log
+
+## @section Persistence parameters
+
+## @param persistence.enabled Enable a PersistentVolumeClaim for uploaded media
+## @param persistence.storageClass StorageClass for the upload PVC (`""` uses the cluster default)
+## @param persistence.accessMode PVC access mode
+## @param persistence.size Size of the upload PVC
+## Scale based on your library. 50Gi suits a small personal library;
+## larger collections (>50k photos) may need 200Gi+.
+##
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 50Gi
+
+## @section Service parameters
+
+## @param service.type Kubernetes Service type
+## Use ClusterIP when exposing via Ingress; LoadBalancer for a direct external IP.
+## @param service.port Service port
+## @param service.targetPort Port Immich listens on inside the container
+##
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 2283
+
+## @section Resource parameters
+
+## @param resources.limits.cpu CPU limit for the Immich server pod
+## @param resources.limits.memory Memory limit for the Immich server pod
+## @param resources.requests.cpu CPU request for the Immich server pod
+## @param resources.requests.memory Memory request for the Immich server pod
+##
+resources: {}
+  # limits:
+  #   cpu: 500m
+  #   memory: 2Gi
+  # requests:
+  #   cpu: 10m
+  #   memory: 25Mi
+
+## @section Scheduling parameters
+
+## @param nodeSelector Node labels for pod assignment
+## Leave empty ({}) to allow scheduling on any node.
+## e.g.:
+##   nodeSelector:
+##     node-role: app
+##
+nodeSelector: {}
+
+## @param affinity Affinity for pod assignment
+## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+## e.g. prefer not to co-locate the server and ML pods on the same node:
+##   affinity:
+##     podAntiAffinity:
+##       preferredDuringSchedulingIgnoredDuringExecution:
+##         - weight: 1
+##           podAffinityTerm:
+##             labelSelector:
+##               matchLabels:
+##                 app.kubernetes.io/component: machine-learning
+##             topologyKey: kubernetes.io/hostname
+##
+affinity: {}
+
+## @param tolerations Tolerations for pod scheduling
+## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+## e.g.:
+##   tolerations:
+##     - key: "dedicated"
+##       operator: "Equal"
+##       value: "immich"
+##       effect: "NoSchedule"
+##
+tolerations: []
+
+## @section Machine Learning parameters
+
+machineLearning:
+  ## @param machineLearning.enabled Deploy the Machine Learning sidecar
+  ## Provides CLIP smart search and facial recognition.
+  ## Disable if your nodes lack the resources or you prefer to run ML separately
+  ## via the companion immich-ml-helper-chart.
+  ##
+  enabled: true
+
+  ## @param machineLearning.image.repository ML container image repository
+  ## @param machineLearning.image.tag ML container image tag
+  ##
+  image:
+    repository: ghcr.io/immich-app/immich-machine-learning
+    tag: "v2.6.3"
+
+  ## @param machineLearning.env Extra environment variables for the ML container
+  ## Provide as a map of key/value pairs.
+  ##
+  env: {}
+
+  ## @param machineLearning.nodeSelector Node labels for ML pod assignment
+  ## Machine learning workloads require amd64 by default. Adjust or remove for arm64 clusters.
+  ## e.g.:
+  ##   nodeSelector:
+  ##     kubernetes.io/arch: amd64
+  ##
+  nodeSelector: {}
+
+  ## @param machineLearning.affinity Affinity for ML pod assignment
+  ## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  ## e.g. require scheduling onto nodes labelled for ML workloads:
+  ##   affinity:
+  ##     nodeAffinity:
+  ##       requiredDuringSchedulingIgnoredDuringExecution:
+  ##         nodeSelectorTerms:
+  ##           - matchExpressions:
+  ##               - key: workload-type
+  ##                 operator: In
+  ##                 values:
+  ##                   - ml
+  ##
+  affinity: {}
+
+  ## @param machineLearning.tolerations Tolerations for ML pod scheduling
+  ## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  ## e.g. allow scheduling onto a GPU-tainted node:
+  ##   tolerations:
+  ##     - key: "nvidia.com/gpu"
+  ##       operator: "Exists"
+  ##       effect: "NoSchedule"
+  ##
+  tolerations: []
+
+  ## @param machineLearning.persistence.enabled Enable a PersistentVolumeClaim for the model cache
+  ## Without persistence, models are re-downloaded on every restart (~2–5 Gi).
+  ## @param machineLearning.persistence.storageClass StorageClass for the model-cache PVC (`""` uses the cluster default)
+  ## @param machineLearning.persistence.accessMode PVC access mode
+  ## @param machineLearning.persistence.size Size of the model-cache PVC
+  ##
+  persistence:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 10Gi
+
+  ## @param machineLearning.resources.limits.cpu ML CPU limit
+  ## @param machineLearning.resources.limits.memory ML memory limit
+  ## @param machineLearning.resources.requests.cpu ML CPU request
+  ## @param machineLearning.resources.requests.memory ML memory request
+  ##
+  resources: {}
+    # limits:
+    #   cpu: "2"
+    #   memory: 4Gi
+    # requests:
+    #   cpu: 10m
+    #   memory: 25Mi
+
+## @section Ingress parameters
+
+ingress:
+  ## @param ingress.enabled Enable an Ingress resource
+  ## Requires an Ingress controller installed in the cluster (e.g. ingress-nginx).
+  ##
+  enabled: false
+
+  ## @param ingress.ingressClassName IngressClass to use
+  ## Run `kubectl get ingressclass` to list available classes.
+  ##
+  ingressClassName: "nginx"
+
+  ## @param ingress.annotations Additional annotations for the Ingress resource
+  ## Annotations are controller-specific. Examples:
+  ##
+  ## ingress-nginx:
+  ##   nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  ##   nginx.ingress.kubernetes.io/proxy-body-size: 4G
+  ##
+  ## Cloudflare Tunnel + external-dns:
+  ##   external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+  ##   external-dns.alpha.kubernetes.io/hostname: immich.example.com
+  ##   external-dns.alpha.kubernetes.io/target: <tunnel-id>.cfargotunnel.com
+  ##
+  annotations: {}
+
+  ## @param ingress.host Hostname at which Immich will be served
+  ##
+  host: immich.example.com
+
+  ## @param ingress.path Path prefix for the Immich Ingress rule
+  ##
+  path: /
+
+  ## @param ingress.tls TLS configuration for the Ingress resource
+  ## Leave empty if your proxy (e.g. Cloudflare) handles TLS termination upstream.
+  ## To use cert-manager:
+  ##   tls:
+  ##     - secretName: immich-tls
+  ##       hosts:
+  ##         - immich.example.com
+  ##
+  tls: []

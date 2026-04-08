@@ -1,0 +1,113 @@
+## @section Image parameters
+
+## @param image.repository Container image repository
+## @param image.tag Container image tag
+## Check https://github.com/immich-app/immich/releases for available tags.
+##
+image:
+  repository: ghcr.io/immich-app/immich-machine-learning
+  tag: "v2.6.3"
+  ## Hardware acceleration (optional)
+  ## Uncomment and configure for GPU-accelerated inference.
+  ## Refer to https://immich.app/docs/features/ml-hardware-acceleration for supported backends.
+  ##
+  # extends:
+  #   file: hwaccel.ml.yml
+  #   service: cuda   # one of: armnn | cuda | rocm | openvino | openvino-wsl | rknn
+
+## @section Environment parameters
+
+## @param env Extra environment variables for the ML container
+## Provide as a map of key/value pairs, e.g.:
+## env:
+##   MACHINE_LEARNING_WORKERS: "1"
+##   MACHINE_LEARNING_WORKER_TIMEOUT: "120"
+##
+env: {}
+
+## @section Service parameters
+
+service:
+  ## @param service.type Kubernetes Service type
+  ## Use ClusterIP when the Immich server is in the same cluster/namespace.
+  ## Use NodePort only if you need to reach the ML service from outside the cluster.
+  ##
+  type: ClusterIP
+  ## @param service.port Service port exposed on the ClusterIP
+  ##
+  port: 3003
+  ## @param service.targetPort Port the ML process listens on inside the container
+  ##
+  targetPort: 3003
+  ## @param service.nodePort NodePort to expose when service.type=NodePort
+  ## Ignored when service.type is ClusterIP or LoadBalancer.
+  ##
+  # nodePort: 32003
+
+## @section Persistence parameters
+
+persistence:
+  ## @param persistence.enabled Enable a PersistentVolumeClaim for the model cache
+  ## Strongly recommended in production — without it, models are re-downloaded on every restart.
+  ##
+  enabled: true
+  ## @param persistence.storageClass StorageClass for the model-cache PVC (`""` uses the cluster default)
+  ##
+  storageClass: ""
+  ## @param persistence.accessMode PVC access mode
+  ##
+  accessMode: ReadWriteOnce
+  ## @param persistence.size Size of the model-cache PVC
+  ## Models typically need 3–5 Gi; allocate more if you enable additional model sets.
+  ##
+  size: 10Gi
+
+## @section Resource parameters
+
+## @param resources.limits CPU and memory hard limits
+## @param resources.requests CPU and memory baseline requests
+## The ML workload is bursty — a low request with a higher limit works well.
+## Adjust based on your node capacity and the number of workers (MACHINE_LEARNING_WORKERS).
+##
+resources:
+  limits:
+    cpu: "4"
+    memory: 8Gi
+  requests:
+    cpu: 10m
+    memory: 500Mi
+
+## @section Scheduling parameters
+
+## @param nodeSelector Node labels for pod assignment
+## Machine learning workloads require amd64 by default. Adjust or remove for arm64 clusters.
+## e.g.:
+##   nodeSelector:
+##     kubernetes.io/arch: amd64
+##
+nodeSelector: {}
+
+## @param affinity Affinity for pod assignment
+## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+## e.g. require scheduling onto nodes labelled for ML workloads:
+##   affinity:
+##     nodeAffinity:
+##       requiredDuringSchedulingIgnoredDuringExecution:
+##         nodeSelectorTerms:
+##           - matchExpressions:
+##               - key: workload-type
+##                 operator: In
+##                 values:
+##                   - ml
+##
+affinity: {}
+
+## @param tolerations Tolerations for pod scheduling
+## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+## e.g. allow scheduling onto a GPU-tainted node:
+##   tolerations:
+##     - key: "nvidia.com/gpu"
+##       operator: "Exists"
+##       effect: "NoSchedule"
+##
+tolerations: []

@@ -1,0 +1,14 @@
+apiVersion: v2
+name: database
+version: 0.1.0
+description: A Helm chart for deploying the database service for the Immich application
+maintainers:
+  - name: aydinseven7
+keywords:
+  - database
+  - postgres
+  - immich
+home: https://immich.app
+sources:
+  - https://github.com/immich-app/immich
+dependencies: []

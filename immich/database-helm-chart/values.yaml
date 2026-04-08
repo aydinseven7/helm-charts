@@ -1,0 +1,96 @@
+## @section Image parameters
+
+## @param image.repository Container image repository
+## @param image.tag Container image tag
+## Immich requires a patched PostgreSQL image bundled with the pgvecto.rs and
+## VectorChord extensions. Do not substitute a plain postgres image.
+## Check https://github.com/immich-app/postgres for available tags.
+##
+image:
+  repository: ghcr.io/immich-app/postgres
+  tag: "14-vectorchord0.4.3-pgvectors0.2.0"
+
+## @section Persistence parameters
+
+persistence:
+  ## @param persistence.enabled Enable a PersistentVolumeClaim for database data
+  ## Disable only for ephemeral testing environments — all data will be lost on pod restart.
+  ##
+  enabled: true
+  ## @param persistence.storageClass StorageClass for the database PVC
+  ## Set to "" to use the cluster default StorageClass.
+  ## Examples: "standard", "local-path", "longhorn"
+  ##
+  storageClass: ""
+  ## @param persistence.accessMode PVC access mode
+  ##
+  accessMode: ReadWriteOnce
+  ## @param persistence.size Size of the database PVC
+  ## Scale up based on your library size. 10Gi suits a small personal library;
+  ## larger collections (>50k photos) may need 30Gi+.
+  ##
+  size: 10Gi
+
+## @section PostgreSQL credentials parameters
+##
+## Credentials are read from a pre-existing Kubernetes Secret so that
+## plaintext passwords never appear in values files or Helm releases.
+##
+## Create the Secret before installing this chart:
+##   kubectl create secret generic postgres-secret \
+##     --from-literal=username=immich \
+##     --from-literal=password=changeme
+##
+## @param postgresUser.name Name of the Secret containing the PostgreSQL username
+## @param postgresUser.key Key within the Secret that holds the username value
+##
+postgresUser:
+  name: postgres-secret
+  key: username
+
+## @param postgresPassword.name Name of the Secret containing the PostgreSQL password
+## @param postgresPassword.key Key within the Secret that holds the password value
+##
+postgresPassword:
+  name: postgres-secret
+  key: password
+
+## @param postgresDatabase Name of the database to create / connect to
+##
+postgresDatabase: immich
+
+## @section Scheduling parameters
+
+## @param nodeSelector Node labels for pod assignment
+## Leave empty ({}) to allow scheduling on any node.
+## e.g.:
+##   nodeSelector:
+##     node-role: database
+##
+nodeSelector: {}
+
+## @param affinity Affinity for pod assignment
+## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+## e.g. prefer not to co-locate with another database pod on the same node:
+##   affinity:
+##     podAntiAffinity:
+##       preferredDuringSchedulingIgnoredDuringExecution:
+##         - weight: 1
+##           podAffinityTerm:
+##             labelSelector:
+##               matchLabels:
+##                 app.kubernetes.io/component: database
+##             topologyKey: kubernetes.io/hostname
+##
+affinity: {}
+
+## @param tolerations Tolerations for pod scheduling
+## Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+## e.g. allow scheduling onto a node tainted for database workloads:
+##   tolerations:
+##     - key: "dedicated"
+##       operator: "Equal"
+##       value: "database"
+##       effect: "NoSchedule"
+##
+tolerations: []
