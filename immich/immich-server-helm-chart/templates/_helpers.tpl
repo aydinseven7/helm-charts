@@ -46,3 +46,12 @@ app.kubernetes.io/name: {{ include "immich-server.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: machine-learning
 {{- end }}
+
+{{/*
+Common labels for the Machine Learning Deployment metadata.
+*/}}
+{{- define "immich-ml.labels" -}}
+helm.sh/chart: {{ include "immich-server.chart" . }}
+{{ include "immich-ml.selectorLabels" . }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}

@@ -4,8 +4,7 @@ kind: Deployment
 metadata:
   name: {{ include "immich-server.fullname" . }}-ml
   labels:
-    {{- include "immich-server.labels" . | nindent 4 }}
-    app.kubernetes.io/component: machine-learning
+    {{- include "immich-ml.labels" . | nindent 4 }}
 spec:
   replicas: 1
   selector:

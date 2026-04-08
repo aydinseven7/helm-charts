@@ -4,8 +4,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: {{ include "immich-server.fullname" . }}-ml-pvc
   labels:
-    {{- include "immich-server.labels" . | nindent 4 }}
-    app.kubernetes.io/component: machine-learning
+    {{- include "immich-ml.labels" . | nindent 4 }}
 spec:
   accessModes:
     - {{ .Values.machineLearning.persistence.accessMode }}
