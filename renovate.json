@@ -1,0 +1,23 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      "description": "Patch image updates in any chart → patch-bump the Chart version",
+      "matchManagers": ["helm-values"],
+      "matchUpdateTypes": ["patch"],
+      "bumpVersion": "patch"
+    },
+    {
+      "description": "Minor image updates in any chart → minor-bump the Chart version",
+      "matchManagers": ["helm-values"],
+      "matchUpdateTypes": ["minor"],
+      "bumpVersion": "minor"
+    },
+    {
+      "description": "Disable updates for non-semver image tags",
+      "matchPackageNames": ["ghcr.io/immich-app/postgres"],
+      "enabled": false
+    }
+  ]
+}
