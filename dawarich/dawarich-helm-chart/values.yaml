@@ -1,0 +1,198 @@
+## Image parameters
+image:
+  ## Dawarich image repository
+  repository: freikin/dawarich
+  ## Dawarich image tag
+  tag: "1.6.1"
+
+## Service parameters
+service:
+  ## Enable the service
+  enabled: true
+  ## Service port
+  port: 3000
+  ## Service type
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+  type: ClusterIP
+  ## Container port to route traffic to
+  targetPort: 3000
+  ## Protocol used by the service
+  protocol: TCP
+  ## Additional annotations for the service
+  annotations: {}
+  ## Additional labels for the service
+  labels: {}
+
+## Ingress parameters
+ingress:
+  ## Enable ingress
+  enabled: true
+  ## Additional annotations for the ingress
+  ## e.g.:
+  ## annotations:
+  ##   nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  ##   nginx.ingress.kubernetes.io/proxy-body-size: 4G
+  annotations: {}
+  ## IngressClass that will be used to implement the Ingress
+  ingressClassName: ""
+  ## Path for the ingress rule
+  path: "/"
+  ## Hostname for the ingress
+  host: "dawarich.example.com"
+  ## TLS configuration
+  ## e.g.:
+  ## tls:
+  ##   - secretName: dawarich-tls
+  ##     hosts:
+  ##       - dawarich.example.com
+  tls: []
+
+## HTTPRoute parameters
+## ref: https://gateway-api.sigs.k8s.io/api-types/httproute/
+httpRoute:
+  ## Enable HTTPRoute (Gateway API). Mutually exclusive with ingress.
+  enabled: false
+  ## Additional annotations for the HTTPRoute
+  annotations: {}
+  ## Gateways this route should attach to
+  ## e.g.:
+  ## parentRefs:
+  ##   - name: my-gateway
+  ##     namespace: gateway-system
+  parentRefs: []
+  ## Hostnames this route matches. Defaults to ingress.host if empty.
+  hostnames: []
+  ## Additional rules appended to the HTTPRoute spec.rules list
+  ## e.g.:
+  ## extraRules:
+  ##   - matches:
+  ##       - path:
+  ##           type: PathPrefix
+  ##           value: /api
+  ##     backendRefs:
+  ##       - name: my-api-svc
+  ##         port: 8080
+  extraRules: []
+
+## Application environment parameters
+env:
+  ## Rails environment
+  RAILS_ENV: production
+  ## Comma-separated list of allowed hostnames
+  APPLICATION_HOSTS: dawarich.example.com
+  ## Number of concurrent Sidekiq workers
+  BACKGROUND_PROCESSING_CONCURRENCY: 10
+  ## Protocol the app is served over (http or https)
+  APPLICATION_PROTOCOL: http
+  ## Enable Prometheus exporter
+  PROMETHEUS_EXPORTER_ENABLED: "false"
+  ## Prometheus exporter bind address
+  PROMETHEUS_EXPORTER_HOST: "0.0.0.0"
+  ## Prometheus exporter port
+  PROMETHEUS_EXPORTER_PORT: "9394"
+  ## Persist downloaded reverse-geocoding data locally
+  STORE_GEODATA: "true"
+  ## Additional trusted hosts for Rails (usually same as APPLICATION_HOSTS)
+  RAILS_APPLICATION_CONFIG_HOSTS: "dawarich.example.com"
+
+## SMTP parameters
+smtp:
+  ## SMTP server address
+  address: "smtp.example.com"
+  ## SMTP server port
+  port: 587
+  ## SMTP HELO domain
+  domain: "example.com"
+  ## SMTP login username
+  username: "user@example.com"
+  ## SMTP password (ignored if existingSecret.name is set)
+  password: ""
+  ## Reference to an existing secret containing the SMTP password
+  existingSecret:
+    ## Name of the existing secret
+    name: "dawarich-secret"
+    ## Key within the secret for the SMTP password
+    key: "smtp-password"
+
+## Database parameters
+database:
+  ## Reference to an existing secret containing the database password
+  existingSecret:
+    ## Name of the existing secret
+    name: "dawarich-postgres-secret"
+    ## Key within the secret for the database password
+    key: "password"
+  ## PostgreSQL host
+  host: "postgis"
+  ## PostgreSQL username
+  username: "postgres"
+  ## Database password (ignored if existingSecret.name is set)
+  password: ""
+  ## Database name
+  name: "dawarich"
+
+## Redis parameters
+redis:
+  ## Redis connection URL
+  host: "redis://redis-master:6379"
+
+## Resource requests and limits. Defaults to {} (no limits).
+## ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+## e.g.:
+## resources:
+##   limits:
+##     cpu: 1
+##     memory: 1Gi
+##   requests:
+##     cpu: 50m
+##     memory: 10Mi
+resources: {}
+
+## Metrics parameters
+metrics:
+  ## Enable metrics collection
+  enabled: false
+
+## Persistence parameters
+## ref: https://kubernetes.io/docs/concepts/storage/persistent-volumes/
+persistence:
+  ## Watched files volume
+  watched:
+    ## Enable persistence for watched import files
+    enabled: true
+    ## PVC size
+    size: 1Gi
+    ## Storage class name. Leave empty to use the default storage class.
+    storageClass: ""
+    ## PVC access mode
+    accessMode: ReadWriteOnce
+  ## Public assets volume
+  public:
+    ## Enable persistence for public assets
+    enabled: true
+    ## PVC size
+    size: 1Gi
+    ## Storage class name. Leave empty to use the default storage class.
+    storageClass: ""
+    ## PVC access mode
+    accessMode: ReadWriteOnce
+  ## Active Storage uploads volume
+  storage:
+    ## Enable persistence for Active Storage uploads
+    enabled: true
+    ## PVC size
+    size: 1Gi
+    ## Storage class name. Leave empty to use the default storage class.
+    storageClass: ""
+    ## PVC access mode
+    accessMode: ReadWriteOnce
+  ## Database data volume
+  db:
+    ## Enable persistence for the database data directory
+    enabled: true
+    ## PVC size
+    size: 5Gi
+    ## Storage class name. Leave empty to use the default storage class.
+    storageClass: ""
+    ## PVC access mode
+    accessMode: ReadWriteOnce

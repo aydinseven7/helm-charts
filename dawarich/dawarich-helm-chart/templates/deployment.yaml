@@ -1,0 +1,201 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-app
+  labels:
+    app: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      # Deployments require restartPolicy: Always
+      restartPolicy: Always
+      containers:
+      - name: {{ .Release.Name }}-app
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        stdin: true
+        tty: true
+        # map docker-compose 'entrypoint' -> k8s 'command'
+        command: ["web-entrypoint.sh"]
+        # map docker-compose 'command' -> k8s 'args'
+        args:
+          - "bin/rails"
+          - "server"
+          - "-p"
+          - "{{ .Values.service.targetPort }}"
+          - "-b"
+          - "::"
+        ports:
+        - containerPort: {{ .Values.service.targetPort }}
+          protocol: {{ .Values.service.protocol }}
+        {{- if .Values.metrics.enabled }}
+        - containerPort: {{ .Values.metrics.port }}
+          name: prometheus-exporter
+          protocol: TCP
+        {{- end }}
+        {{- /* livenessProbe: prefer user-supplied .Values.livenessProbe, otherwise fallback to exec healthcheck from the provided spec */ -}}
+        {{- if .Values.livenessProbe }}
+        livenessProbe:
+          {{ toYaml .Values.livenessProbe | nindent 12 }}
+        {{- else }}
+        livenessProbe:
+          exec:
+            command:
+              - sh
+              - -c
+              - >-
+                wget -qO - http://127.0.0.1:{{ .Values.service.targetPort }}/api/v1/health | grep -q '"status"\s*:\s*"ok"'
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 30
+          initialDelaySeconds: 30
+        {{- end }}
+        {{- /* readinessProbe: prefer user-supplied .Values.readinessProbe, otherwise mirror liveness fallback */ -}}
+        {{- if .Values.readinessProbe }}
+        readinessProbe:
+          {{ toYaml .Values.readinessProbe | nindent 12 }}
+        {{- else }}
+        readinessProbe:
+          exec:
+            command:
+              - sh
+              - -c
+              - >-
+                wget -qO - http://127.0.0.1:{{ .Values.service.targetPort }}/api/v1/health | grep -q '"status"\s*:\s*"ok"'
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 30
+          initialDelaySeconds: 30
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+        env:
+        - name: SMTP_PASSWORD
+          {{- if .Values.smtp.existingSecret.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.smtp.existingSecret.name }}
+              key: {{ .Values.smtp.existingSecret.key }}
+          {{- else }}
+          value: {{ .Values.smtp.password | quote }}
+          {{- end }}
+        - name: DATABASE_PASSWORD
+          {{- if .Values.database.existingSecret.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.database.existingSecret.name }}
+              key: {{ .Values.database.existingSecret.key }}
+          {{- else }}
+          value: {{ .Values.database.password | quote }}
+          {{- end }}
+        envFrom:
+        - configMapRef:
+            name: dawarich-config
+        volumeMounts:
+          - name: dawarich-public
+            mountPath: /var/app/public
+          - name: dawarich-watched
+            mountPath: /var/app/tmp/imports/watched
+          - name: dawarich-storage
+            mountPath: /var/app/storage
+          - name: dawarich-db-data
+            mountPath: /dawarich_db_data
+
+      # Sidekiq worker container (same settings as main app)
+      - name: {{ .Release.Name }}-sidekiq
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        stdin: true
+        tty: true
+        # use provided sidekiq entrypoint
+        command: ["sidekiq-entrypoint.sh"]
+        # run Sidekiq
+        args:
+          - "sidekiq"
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        # healthcheck -> Kubernetes probes (pgrep -f sidekiq)
+        livenessProbe:
+          exec:
+            command:
+              - sh
+              - -c
+              - pgrep -f sidekiq
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 30
+          initialDelaySeconds: 30
+        readinessProbe:
+          exec:
+            command:
+              - sh
+              - -c
+              - pgrep -f sidekiq
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 30
+          initialDelaySeconds: 30
+        env:
+        - name: RAILS_ENV
+          value: {{ .Values.env.RAILS_ENV | quote | default "development"}}
+        - name: REDIS_URL
+          value: {{ .Values.redis.host | quote | default "redis://dawarich_redis:6379" }}
+        - name: DATABASE_HOST
+          value: {{ .Values.database.host | quote | default "dawarich_db" }}
+        - name: DATABASE_USERNAME
+          value: {{ .Values.database.username | quote | default "dawarich" }}
+        - name: DATABASE_PASSWORD
+          {{- if .Values.database.existingSecret.name }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.database.existingSecret.name }}
+              key: {{ .Values.database.existingSecret.key }}
+          {{- else }}
+          value: {{ .Values.database.password | quote }}
+          {{- end }}
+        - name: DATABASE_NAME
+          value: {{ .Values.database.name | quote | default "dawarich_development" }}
+        - name: APPLICATION_HOSTS
+          value: {{ .Values.ingress.host | quote | default "localhost" }}
+        - name: TIME_ZONE
+          value: {{ .Values.env.timeZone | quote | default "Europe/Berlin" }}
+        - name: APPLICATION_PROTOCOL
+          value: {{ .Values.env.APPLICATION_PROTOCOL | quote | default "http" }}
+        - name: PROMETHEUS_EXPORTER_ENABLED
+          value: {{ .Values.env.PROMETHEUS_EXPORTER_ENABLED | quote | default "false" }}
+        - name: PROMETHEUS_EXPORTER_HOST
+          value: {{ .Values.env.PROMETHEUS_EXPORTER_HOST | quote | default "0.0.0.0" }}
+        - name: PROMETHEUS_EXPORTER_PORT
+          value: {{ .Values.env.PROMETHEUS_EXPORTER_PORT | quote | default "9394" }}
+        - name: SELF_HOSTED
+          value: "true"
+        - name: STORE_GEODATA
+          value: {{ .Values.env.STORE_GEODATA | quote | default "true" }}
+        volumeMounts:
+          - name: dawarich-public
+            mountPath: /var/app/public
+          - name: dawarich-watched
+            mountPath: /var/app/tmp/imports/watched
+          - name: dawarich-storage
+            mountPath: /var/app/storage
+      volumes:
+        - name: dawarich-public
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-dawarich-public-pvc
+        - name: dawarich-watched
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-dawarich-watched-pvc
+        - name: dawarich-storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-dawarich-storage-pvc
+        - name: dawarich-db-data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-dawarich-db-data-pvc

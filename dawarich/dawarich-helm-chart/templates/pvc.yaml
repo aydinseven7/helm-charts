@@ -1,0 +1,59 @@
+{{- if .Values.persistence.public.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-dawarich-public-pvc
+  namespace: {{ .Release.Namespace }}
+spec:
+    accessModes:
+        - {{ .Values.persistence.public.accessMode | default "ReadWriteOnce" }}
+    resources:
+        requests:
+            storage: {{ .Values.persistence.public.size | default "1Gi" }}
+    storageClassName: {{ .Values.persistence.public.storageClass | default "local-path" }}
+{{- end }}
+---
+{{- if .Values.persistence.watched.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-dawarich-watched-pvc
+  namespace: {{ .Release.Namespace }}
+spec:
+    accessModes:
+        - {{ .Values.persistence.watched.accessMode | default "ReadWriteOnce" }}
+    resources:
+        requests:
+            storage: {{ .Values.persistence.watched.size | default "1Gi" }}
+    storageClassName: {{ .Values.persistence.watched.storageClass | default "local-path" }}
+{{- end }}
+---
+{{- if .Values.persistence.storage.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-dawarich-storage-pvc
+  namespace: {{ .Release.Namespace }}
+spec:
+    accessModes:
+        - {{ .Values.persistence.storage.accessMode | default "ReadWriteOnce" }}
+    resources:
+        requests:
+            storage: {{ .Values.persistence.storage.size | default "1Gi" }}
+    storageClassName: {{ .Values.persistence.storage.storageClass | default "local-path" }}
+{{- end }}
+---
+{{- if .Values.persistence.db.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-dawarich-db-data-pvc
+  namespace: {{ .Release.Namespace }}
+spec:
+    accessModes:
+        - {{ .Values.persistence.db.accessMode | default "ReadWriteOnce" }}
+    resources:
+        requests:
+            storage: {{ .Values.persistence.db.size | default "1Gi" }}
+    storageClassName: {{ .Values.persistence.db.storageClass | default "local-path" }}
+{{- end }}

@@ -1,0 +1,147 @@
+## Number of replicas
+replicaCount: 1
+
+## Image parameters
+image:
+  ## PostGIS image repository
+  repository: postgis/postgis
+  ## Image pull policy
+  pullPolicy: IfNotPresent
+
+## Liveness probe parameters
+liveness:
+  ## Enable liveness probe
+  enabled: "true"
+
+## Security parameters
+security:
+  ## Fallback database password (ignored if existingSecret is set)
+  password: "changeme"
+  networkPolicy:
+    ## Enable network policy
+    enable: false
+
+## PostgreSQL parameters
+postgresql:
+  ## PostgreSQL major version
+  version: "17"
+  ## Database superuser username
+  username: postgres
+  ## Default database name
+  dbname: dawarich
+  ## Reference to an existing secret containing the database password
+  existingSecret:
+    ## Use an existing secret
+    enabled: false
+    ## Name of the existing secret
+    name: "dawarich-postgres-secret"
+    ## Key within the secret for the password
+    key: password
+
+## PostGIS parameters
+postgis:
+  ## Enable PostGIS extension
+  enabled: true
+  ## PostGIS version
+  version: "3.5"
+
+## Readiness probe parameters
+readiness:
+  ## Enable readiness probe
+  enabled: "true"
+
+## Init container parameters
+init:
+  ## Enable init container (e.g. for seeding a SQL dump)
+  enabled: false
+  ## Init container image
+  image: curlimages/curl
+  ## Init container command
+  command: ["curl"]
+  ## Init container arguments
+  args: ["https://example.com/example.sql", "-o", "/data/dump.sql"]
+
+## Image pull secrets
+imagePullSecrets: []
+## Override the chart name
+nameOverride: ""
+## Override the full chart name
+fullnameOverride: ""
+
+## Network policy parameters
+networkPolicy:
+  ## Enable network policy
+  enabled: false
+
+## Service account parameters
+serviceAccount:
+  ## Create a dedicated service account
+  create: true
+  ## Annotations for the service account
+  annotations: {}
+  ## Name of the service account (auto-generated if empty)
+  name: ""
+
+## Additional annotations for pods
+podAnnotations: {}
+
+## Pod-level security context
+## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+podSecurityContext: {}
+
+## Container-level security context
+securityContext: {}
+
+## Service parameters
+service:
+  ## Service type
+  type: ClusterIP
+  ## PostgreSQL port
+  port: 5432
+
+## Resource requests and limits. Defaults to {} (no limits).
+## ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+## e.g.:
+## resources:
+##   limits:
+##     cpu: 300m
+##     memory: 500Mi
+##   requests:
+##     cpu: 10m
+##     memory: 10Mi
+resources: {}
+
+## Persistence parameters
+## ref: https://kubernetes.io/docs/concepts/storage/persistent-volumes/
+persistence:
+  ## Enable persistence
+  enabled: true
+  ## Storage class name. Leave empty to use the default storage class.
+  storageClass: ""
+  ## PVC access mode
+  accessMode: ReadWriteOnce
+  ## PVC size
+  size: 5Gi
+
+## Autoscaling parameters
+autoscaling:
+  ## Enable autoscaling
+  enabled: false
+  ## Minimum number of replicas
+  minReplicas: 1
+  ## Maximum number of replicas
+  maxReplicas: 100
+  ## Target CPU utilization percentage
+  targetCPUUtilizationPercentage: 80
+
+## Node labels for pod assignment
+## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+nodeSelector: {}
+
+## Tolerations for pod assignment
+## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+tolerations: []
+
+## Affinity for pod assignment
+## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+affinity: {}

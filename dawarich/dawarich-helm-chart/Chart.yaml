@@ -1,0 +1,10 @@
+apiVersion: v2
+name: dawarich
+version: 0.1.0
+appVersion: "0.34.0"
+description: A Helm chart for deploying the Dawarich server
+keywords:
+  - dawarich
+sources:
+  - https://github.com/Freika/dawarich
+dependencies: []

@@ -1,0 +1,78 @@
+## @param fullnameOverride Override the full chart name
+fullnameOverride: "redis"
+
+## @section Authentication parameters
+auth:
+  ## @param auth.enabled Enable Redis authentication
+  enabled: false
+
+## @section Master parameters
+master:
+  persistence:
+    ## @param master.persistence.enabled Enable persistence for the master node
+    enabled: true
+    path: /data
+    ## @param master.persistence.size PVC size
+    size: 2Gi
+  ## @param master.nodeSelector Node labels for master pod assignment
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+  nodeSelector: {}
+  ## @param master.resources Resource requests and limits. Defaults to {} (no limits).
+  ## e.g.:
+  ## resources:
+  ##   limits:
+  ##     cpu: 300m
+  ##     memory: 500Mi
+  ##   requests:
+  ##     cpu: 10m
+  ##     memory: 10Mi
+  resources: {}
+
+## @section Image parameters
+image:
+  registry: docker.io
+  repository: bitnamilegacy/redis
+  tag: 8.2.1-debian-12-r0
+
+## @section Replica parameters
+replica:
+  kind: StatefulSet
+  ## @param replica.replicaCount Number of replica nodes
+  replicaCount: 1
+  persistence:
+    ## @param replica.persistence.enabled Enable persistence for replica nodes
+    enabled: true
+    ## @param replica.persistence.size PVC size
+    size: 2Gi
+  ## @param replica.nodeSelector Node labels for replica pod assignment
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+  nodeSelector: {}
+  ## @param replica.resources Resource requests and limits. Defaults to {} (no limits).
+  ## e.g.:
+  ## resources:
+  ##   limits:
+  ##     cpu: 300m
+  ##     memory: 500Mi
+  ##   requests:
+  ##     cpu: 10m
+  ##     memory: 10Mi
+  resources: {}
+
+## @section Metrics parameters
+metrics:
+  ## @param metrics.enabled Enable Prometheus metrics exporter
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/redis-exporter
+    tag: 1.76.0-debian-12-r0
+  serviceMonitor:
+    ## @param metrics.serviceMonitor.enabled Enable ServiceMonitor for Prometheus Operator
+    enabled: false
+    ## @param metrics.serviceMonitor.namespace Namespace for the ServiceMonitor
+    namespace: "monitoring"
+  podMonitor:
+    ## @param metrics.podMonitor.enabled Enable PodMonitor for Prometheus Operator
+    enabled: false
+    ## @param metrics.podMonitor.namespace Namespace for the PodMonitor
+    namespace: "monitoring"

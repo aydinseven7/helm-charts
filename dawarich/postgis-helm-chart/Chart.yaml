@@ -1,0 +1,14 @@
+apiVersion: v2
+name: postgis
+description: An object-relational database management system, a database server
+icon: https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Postgresql_elephant.svg/langfr-220px-Postgresql_elephant.svg.png
+keywords:
+  - SQL
+  - Database
+  - Geo
+home: https://www.postgresql.org/
+sources:
+  - https://github.com/InseeFrLab/helm-charts-datascience/tree/master/charts/postgis
+type: application
+version: 2.0.3
+appVersion: "17"
