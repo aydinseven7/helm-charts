@@ -1,6 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
+  "reviewers": ["aydinseven7"],
   "packageRules": [
     {
       "description": "Patch image updates in any chart → patch-bump the Chart version",
@@ -16,7 +17,7 @@
     },
     {
       "description": "Disable updates for non-semver image tags",
-      "matchPackageNames": ["ghcr.io/immich-app/postgres"],
+      "matchDepNames": ["ghcr.io/immich-app/postgres"],
       "enabled": false
     }
   ]
