@@ -3,7 +3,7 @@ image:
   ## Dawarich image repository
   repository: freikin/dawarich
   ## Dawarich image tag
-  tag: "1.6.1"
+  tag: "1.7.5"
 
 ## Service parameters
 service:
