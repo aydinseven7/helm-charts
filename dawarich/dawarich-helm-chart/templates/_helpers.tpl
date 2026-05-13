@@ -42,6 +42,13 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
+Image tag — uses .Values.image.tag when set, otherwise falls back to Chart.AppVersion.
+*/}}
+{{- define "dawarich.imageTag" -}}
+{{- .Values.image.tag | default .Chart.AppVersion }}
+{{- end }}
+
+{{/*
 Selector labels — used on Deployments and Services. Must stay stable after first deploy.
 */}}
 {{- define "dawarich.selectorLabels" -}}

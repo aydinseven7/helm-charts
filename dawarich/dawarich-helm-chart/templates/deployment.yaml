@@ -20,7 +20,7 @@ spec:
       restartPolicy: Always
       containers:
       - name: {{ include "dawarich.fullname" . }}
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        image: {{ .Values.image.repository }}:{{ include "dawarich.imageTag" . }}
         stdin: true
         tty: true
         command: ["web-entrypoint.sh"]
@@ -114,7 +114,7 @@ spec:
             mountPath: /dawarich_db_data
 
       - name: {{ include "dawarich.fullname" . }}-sidekiq
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        image: {{ .Values.image.repository }}:{{ include "dawarich.imageTag" . }}
         stdin: true
         tty: true
         command: ["sidekiq-entrypoint.sh"]

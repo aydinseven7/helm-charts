@@ -8,7 +8,8 @@ image:
   ## Dawarich image repository
   repository: freikin/dawarich
   ## Dawarich image tag
-  tag: "1.7.7"
+  ## Defaults to Chart.AppVersion when empty
+  tag: ""
 
 ## Service parameters
 service:
