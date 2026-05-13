@@ -2,58 +2,74 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Release.Name }}-dawarich-public-pvc
+  name: {{ include "dawarich.fullname" . }}-dawarich-public-pvc
   namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dawarich.labels" . | nindent 4 }}
 spec:
-    accessModes:
-        - {{ .Values.persistence.public.accessMode | default "ReadWriteOnce" }}
-    resources:
-        requests:
-            storage: {{ .Values.persistence.public.size | default "1Gi" }}
-    storageClassName: {{ .Values.persistence.public.storageClass | default "local-path" }}
+  accessModes:
+    - {{ .Values.persistence.public.accessMode | default "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.public.size | default "1Gi" }}
+  {{- if .Values.persistence.public.storageClass }}
+  storageClassName: {{ .Values.persistence.public.storageClass }}
+  {{- end }}
 {{- end }}
 ---
 {{- if .Values.persistence.watched.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Release.Name }}-dawarich-watched-pvc
+  name: {{ include "dawarich.fullname" . }}-dawarich-watched-pvc
   namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dawarich.labels" . | nindent 4 }}
 spec:
-    accessModes:
-        - {{ .Values.persistence.watched.accessMode | default "ReadWriteOnce" }}
-    resources:
-        requests:
-            storage: {{ .Values.persistence.watched.size | default "1Gi" }}
-    storageClassName: {{ .Values.persistence.watched.storageClass | default "local-path" }}
+  accessModes:
+    - {{ .Values.persistence.watched.accessMode | default "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.watched.size | default "1Gi" }}
+  {{- if .Values.persistence.watched.storageClass }}
+  storageClassName: {{ .Values.persistence.watched.storageClass }}
+  {{- end }}
 {{- end }}
 ---
 {{- if .Values.persistence.storage.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Release.Name }}-dawarich-storage-pvc
+  name: {{ include "dawarich.fullname" . }}-dawarich-storage-pvc
   namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dawarich.labels" . | nindent 4 }}
 spec:
-    accessModes:
-        - {{ .Values.persistence.storage.accessMode | default "ReadWriteOnce" }}
-    resources:
-        requests:
-            storage: {{ .Values.persistence.storage.size | default "1Gi" }}
-    storageClassName: {{ .Values.persistence.storage.storageClass | default "local-path" }}
+  accessModes:
+    - {{ .Values.persistence.storage.accessMode | default "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.storage.size | default "1Gi" }}
+  {{- if .Values.persistence.storage.storageClass }}
+  storageClassName: {{ .Values.persistence.storage.storageClass }}
+  {{- end }}
 {{- end }}
 ---
 {{- if .Values.persistence.db.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Release.Name }}-dawarich-db-data-pvc
+  name: {{ include "dawarich.fullname" . }}-dawarich-db-data-pvc
   namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dawarich.labels" . | nindent 4 }}
 spec:
-    accessModes:
-        - {{ .Values.persistence.db.accessMode | default "ReadWriteOnce" }}
-    resources:
-        requests:
-            storage: {{ .Values.persistence.db.size | default "1Gi" }}
-    storageClassName: {{ .Values.persistence.db.storageClass | default "local-path" }}
+  accessModes:
+    - {{ .Values.persistence.db.accessMode | default "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.db.size | default "1Gi" }}
+  {{- if .Values.persistence.db.storageClass }}
+  storageClassName: {{ .Values.persistence.db.storageClass }}
+  {{- end }}
 {{- end }}

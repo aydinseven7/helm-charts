@@ -1,24 +1,26 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: dawarich-config
+  name: {{ include "dawarich.fullname" . }}-config
   namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "dawarich.labels" . | nindent 4 }}
 data:
-    DATABASE_NAME: {{ .Values.database.name | quote | default "dawarich_development" }}
-    APPLICATION_HOSTS: {{ .Values.ingress.host | quote | default "localhost" }}
-    TIME_ZONE: {{ .Values.env.timeZone | quote | default "Europe/Berlin" }}
-    APPLICATION_PROTOCOL: {{ .Values.env.APPLICATION_PROTOCOL | quote | default "http" }}
-    PROMETHEUS_EXPORTER_ENABLED: {{ .Values.env.PROMETHEUS_EXPORTER_ENABLED | quote | default "false" }}
-    PROMETHEUS_EXPORTER_HOST: {{ .Values.env.PROMETHEUS_EXPORTER_HOST | quote | default "0.0.0.0" }}
-    PROMETHEUS_EXPORTER_PORT: {{ .Values.env.PROMETHEUS_EXPORTER_PORT | quote | default "9394" }}
-    SELF_HOSTED: "true"
-    STORE_GEODATA: {{ .Values.env.STORE_GEODATA | quote | default "true" }}
-    RAILS_ENV: {{ .Values.env.RAILS_ENV | quote | default "development"}}
-    RAILS_APPLICATION_CONFIG_HOSTS: {{ .Values.env.RAILS_APPLICATION_CONFIG_HOSTS | quote | default "dawarich.service7seven.com"}}
-    REDIS_URL: {{ .Values.redis.host | quote | default "redis://dawarich_redis:6379" }}
-    DATABASE_HOST: {{ .Values.database.host | quote | default "dawarich_db" }}
-    DATABASE_USERNAME: {{ .Values.database.username | quote | default "dawarich" }}
-    SMTP_SERVER: {{ .Values.smtp.address | quote }}
-    SMTP_PORT: {{ .Values.smtp.port | quote }}
-    SMTP_DOMAIN: {{ .Values.smtp.domain | quote }}
-    SMTP_USERNAME: {{ .Values.smtp.username | quote }}
+  DATABASE_NAME: {{ .Values.database.name | quote }}
+  APPLICATION_HOSTS: {{ .Values.ingress.host | quote }}
+  TIME_ZONE: {{ .Values.env.timeZone | default "UTC" | quote }}
+  APPLICATION_PROTOCOL: {{ .Values.env.APPLICATION_PROTOCOL | quote }}
+  PROMETHEUS_EXPORTER_ENABLED: {{ .Values.env.PROMETHEUS_EXPORTER_ENABLED | quote }}
+  PROMETHEUS_EXPORTER_PORT: {{ .Values.env.PROMETHEUS_EXPORTER_PORT | quote }}
+  SIDEKIQ_METRICS_URL: {{ .Values.env.SIDEKIQ_METRICS_URL | quote }}
+  SELF_HOSTED: "true"
+  STORE_GEODATA: {{ .Values.env.STORE_GEODATA | quote }}
+  RAILS_ENV: {{ .Values.env.RAILS_ENV | quote }}
+  RAILS_APPLICATION_CONFIG_HOSTS: {{ .Values.env.RAILS_APPLICATION_CONFIG_HOSTS | default .Values.ingress.host | quote }}
+  REDIS_URL: {{ .Values.redis.host | quote }}
+  DATABASE_HOST: {{ .Values.database.host | quote }}
+  DATABASE_USERNAME: {{ .Values.database.username | quote }}
+  SMTP_SERVER: {{ .Values.smtp.address | quote }}
+  SMTP_PORT: {{ .Values.smtp.port | quote }}
+  SMTP_DOMAIN: {{ .Values.smtp.domain | quote }}
+  SMTP_USERNAME: {{ .Values.smtp.username | quote }}
