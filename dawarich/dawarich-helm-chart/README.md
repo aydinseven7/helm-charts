@@ -17,8 +17,8 @@ This chart deploys Dawarich on a [Kubernetes](https://kubernetes.io) cluster usi
 
 The deployment runs two containers in a single Pod:
 
-- **web** – Rails server (`bin/rails server`)
-- **sidekiq** – Background job worker for async processing
+- **web** – Rails server (`bin/rails server`), also serves the Prometheus metrics endpoint at `/metrics`
+- **sidekiq** – Background job worker; runs its own in-process metrics exporter on `PROMETHEUS_EXPORTER_PORT`
 
 Both containers share the same PersistentVolumes for uploads, watched imports, and public assets.
 
@@ -48,12 +48,19 @@ Note: PersistentVolumeClaims are **not** deleted automatically. Remove them manu
 
 ## Parameters
 
+### Global parameters
+
+| Name               | Description                                      | Value |
+|--------------------|--------------------------------------------------|-------|
+| `nameOverride`     | Override the chart name used in resource names   | `""`  |
+| `fullnameOverride` | Override the fully qualified app name            | `""`  |
+
 ### Image parameters
 
-| Name               | Description            | Value               |
-|--------------------|------------------------|---------------------|
-| `image.repository` | Dawarich image repository | `freikin/dawarich` |
-| `image.tag`        | Dawarich image tag     | `1.6.1`             |
+| Name               | Description               | Value               |
+|--------------------|---------------------------|---------------------|
+| `image.repository` | Dawarich image repository                                    | `freikin/dawarich` |
+| `image.tag`        | Dawarich image tag. Defaults to `Chart.AppVersion` when empty. | `""`             |
 
 ### Service parameters
 
@@ -69,68 +76,68 @@ Note: PersistentVolumeClaims are **not** deleted automatically. Remove them manu
 
 ### Ingress parameters
 
-| Name                    | Description                                    | Value                    |
-|-------------------------|------------------------------------------------|--------------------------|
-| `ingress.enabled`       | Enable Ingress                                 | `true`                   |
-| `ingress.ingressClassName` | IngressClass to use                         | `""`                     |
-| `ingress.host`          | Hostname the application is reachable at       | `dawarich.example.com`   |
-| `ingress.path`          | Path prefix for the ingress rule               | `/`                      |
-| `ingress.annotations`   | Additional annotations (e.g. nginx, cert-manager) | `{}`                |
-| `ingress.tls`           | TLS configuration block                        | `[]`                     |
+| Name                       | Description                                       | Value                  |
+|----------------------------|---------------------------------------------------|------------------------|
+| `ingress.enabled`          | Enable Ingress                                    | `true`                 |
+| `ingress.ingressClassName` | IngressClass to use                               | `""`                   |
+| `ingress.host`             | Hostname the application is reachable at          | `dawarich.example.com` |
+| `ingress.path`             | Path prefix for the ingress rule                  | `/`                    |
+| `ingress.annotations`      | Additional annotations (e.g. nginx, cert-manager) | `{}`                   |
+| `ingress.tls`              | TLS configuration block                           | `[]`                   |
 
 ### HTTPRoute parameters
 
-| Name                          | Description                                                               | Value   |
-|-------------------------------|---------------------------------------------------------------------------|---------|
-| `httpRoute.enabled`           | Enable HTTPRoute (Gateway API). Mutually exclusive with `ingress`.        | `false` |
-| `httpRoute.annotations`       | Additional annotations for the HTTPRoute                                  | `{}`    |
-| `httpRoute.parentRefs`        | List of Gateways this route attaches to                                   | `[]`    |
-| `httpRoute.hostnames`         | Hostnames to match. Falls back to `ingress.host` when empty.              | `[]`    |
-| `httpRoute.extraRules`        | Additional rule entries appended to `spec.rules`                          | `[]`    |
+| Name                    | Description                                                        | Value   |
+|-------------------------|--------------------------------------------------------------------|---------|
+| `httpRoute.enabled`     | Enable HTTPRoute (Gateway API). Mutually exclusive with `ingress`. | `false` |
+| `httpRoute.annotations` | Additional annotations for the HTTPRoute                           | `{}`    |
+| `httpRoute.parentRefs`  | List of Gateways this route attaches to                            | `[]`    |
+| `httpRoute.hostnames`   | Hostnames to match. Falls back to `ingress.host` when empty.       | `[]`    |
+| `httpRoute.extraRules`  | Additional rule entries appended to `spec.rules`                   | `[]`    |
 
 ### Application environment parameters
 
-| Name                                    | Description                                                    | Value                    |
-|-----------------------------------------|----------------------------------------------------------------|--------------------------|
-| `env.RAILS_ENV`                         | Rails environment (`production` or `development`)              | `production`             |
-| `env.APPLICATION_HOSTS`                 | Comma-separated list of hostnames Rails accepts requests for   | `dawarich.example.com`   |
-| `env.RAILS_APPLICATION_CONFIG_HOSTS`    | Additional trusted hosts (usually matches `APPLICATION_HOSTS`) | `dawarich.example.com`   |
-| `env.APPLICATION_PROTOCOL`             | Protocol the app is served over (`http` or `https`)            | `http`                   |
-| `env.BACKGROUND_PROCESSING_CONCURRENCY` | Number of concurrent Sidekiq workers                           | `10`                     |
-| `env.STORE_GEODATA`                     | Persist downloaded reverse-geocoding data locally              | `true`                   |
-| `env.timeZone`                          | Rails time zone string (e.g. `Europe/Berlin`)                  | `Europe/Berlin`          |
-| `env.PROMETHEUS_EXPORTER_ENABLED`       | Expose a Prometheus metrics endpoint                           | `false`                  |
-| `env.PROMETHEUS_EXPORTER_HOST`          | Bind address for the Prometheus exporter                       | `0.0.0.0`                |
-| `env.PROMETHEUS_EXPORTER_PORT`          | Port for the Prometheus exporter                               | `9394`                   |
+| Name                                    | Description                                                          | Value                  |
+|-----------------------------------------|----------------------------------------------------------------------|------------------------|
+| `env.RAILS_ENV`                         | Rails environment (`production` or `development`)                    | `production`           |
+| `env.APPLICATION_HOSTS`                 | Comma-separated list of hostnames Rails accepts requests for         | `dawarich.example.com` |
+| `env.RAILS_APPLICATION_CONFIG_HOSTS`    | Additional trusted hosts. Defaults to `ingress.host` when empty.     | `""`                   |
+| `env.APPLICATION_PROTOCOL`             | Protocol the app is served over (`http` or `https`)                  | `http`                 |
+| `env.BACKGROUND_PROCESSING_CONCURRENCY` | Number of concurrent Sidekiq workers                                 | `10`                   |
+| `env.STORE_GEODATA`                     | Persist downloaded reverse-geocoding data locally                    | `true`                 |
+| `env.timeZone`                          | Rails time zone string (e.g. `Europe/Berlin`)                        | `UTC`                  |
+| `env.PROMETHEUS_EXPORTER_ENABLED`       | Enable the Prometheus metrics endpoint on the web container          | `false`                |
+| `env.PROMETHEUS_EXPORTER_PORT`          | Port the in-process Sidekiq metrics exporter binds to                | `9394`                 |
+| `env.SIDEKIQ_METRICS_URL`               | URL the web container fetches Sidekiq metrics from. Override when Sidekiq's hostname differs from the docker-compose default (e.g. set `http://localhost:9394/metrics` on Kubernetes). | `http://localhost:9394/metrics` |
 
 ### SMTP parameters
 
-| Name                        | Description                                                      | Value              |
-|-----------------------------|------------------------------------------------------------------|--------------------|
-| `smtp.address`              | SMTP server hostname                                             | `smtp.example.com` |
-| `smtp.port`                 | SMTP server port                                                 | `587`              |
-| `smtp.domain`               | SMTP HELO domain                                                 | `example.com`      |
-| `smtp.username`             | SMTP login username                                              | `user@example.com` |
-| `smtp.password`             | SMTP password (ignored when `existingSecret.name` is set)        | `""`               |
-| `smtp.existingSecret.name`  | Name of the Kubernetes Secret containing the SMTP password       | `dawarich-secret`  |
-| `smtp.existingSecret.key`   | Key within the secret for the SMTP password                      | `smtp-password`    |
+| Name                        | Description                                               | Value              |
+|-----------------------------|-----------------------------------------------------------|--------------------|
+| `smtp.address`              | SMTP server hostname                                      | `smtp.example.com` |
+| `smtp.port`                 | SMTP server port                                          | `587`              |
+| `smtp.domain`               | SMTP HELO domain                                          | `example.com`      |
+| `smtp.username`             | SMTP login username                                       | `user@example.com` |
+| `smtp.password`             | SMTP password (ignored when `existingSecret.name` is set) | `""`               |
+| `smtp.existingSecret.name`  | Name of the Secret containing the SMTP password           | `dawarich-secret`  |
+| `smtp.existingSecret.key`   | Key within the secret for the SMTP password               | `smtp-password`    |
 
 ### Database parameters
 
-| Name                            | Description                                              | Value                      |
-|---------------------------------|----------------------------------------------------------|----------------------------|
-| `database.host`                 | PostgreSQL host                                          | `postgis.dawarich.svc.cluster.local` |
-| `database.username`             | PostgreSQL username                                      | `postgres`                 |
-| `database.name`                 | PostgreSQL database name                                 | `dawarich`                 |
-| `database.password`             | Database password (ignored when `existingSecret` is set) | `""`                       |
-| `database.existingSecret.name`  | Name of the secret containing the database password      | `dawarich-postgres-secret` |
-| `database.existingSecret.key`   | Key within the secret for the password                   | `password`                 |
+| Name                           | Description                                              | Value                      |
+|--------------------------------|----------------------------------------------------------|----------------------------|
+| `database.host`                | PostgreSQL host                                          | `postgis`                  |
+| `database.username`            | PostgreSQL username                                      | `postgres`                 |
+| `database.name`                | PostgreSQL database name                                 | `dawarich`                 |
+| `database.password`            | Database password (ignored when `existingSecret` is set) | `""`                       |
+| `database.existingSecret.name` | Name of the secret containing the database password      | `dawarich-postgres-secret` |
+| `database.existingSecret.key`  | Key within the secret for the password                   | `password`                 |
 
 ### Redis parameters
 
-| Name         | Description               | Value                        |
-|--------------|---------------------------|------------------------------|
-| `redis.host` | Redis connection URL       | `redis://redis-master:6379`  |
+| Name         | Description          | Value                       |
+|--------------|----------------------|-----------------------------|
+| `redis.host` | Redis connection URL | `redis://redis-master:6379` |
 
 ### Resource parameters
 
@@ -140,30 +147,43 @@ Note: PersistentVolumeClaims are **not** deleted automatically. Remove them manu
 
 ### Metrics parameters
 
-| Name              | Description                                | Value   |
-|-------------------|--------------------------------------------|---------|
-| `metrics.enabled` | Enable the Prometheus exporter sidecar     | `false` |
+| Name                                        | Description                                                                                                  | Value                           |
+|---------------------------------------------|--------------------------------------------------------------------------------------------------------------|---------------------------------|
+| `metrics.enabled`                           | Enable Prometheus metrics (`PROMETHEUS_EXPORTER_ENABLED`) and render the ServiceMonitor                      | `false`                         |
+| `metrics.serviceMonitor.enabled`            | Create a `ServiceMonitor` resource (requires `metrics.enabled` and the Prometheus Operator CRD)              | `false`                         |
+| `metrics.serviceMonitor.namespace`          | Namespace to deploy the ServiceMonitor into. Defaults to the release namespace.                              | `""`                            |
+| `metrics.serviceMonitor.interval`           | Scrape interval                                                                                              | `30s`                           |
+| `metrics.serviceMonitor.scrapeTimeout`      | Scrape timeout. Empty uses the global Prometheus default.                                                    | `""`                            |
+| `metrics.serviceMonitor.honorLabels`        | When true, preserves metric labels that collide with target labels                                           | `false`                         |
+| `metrics.serviceMonitor.relabelings`        | RelabelConfigs to apply to samples before scraping                                                           | `[]`                            |
+| `metrics.serviceMonitor.metricRelabelings`  | MetricRelabelConfigs to apply to samples before ingestion                                                    | `[]`                            |
+| `metrics.serviceMonitor.selector`           | Labels added to the ServiceMonitor metadata for operator discovery (e.g. `release: kube-prometheus-stack`). Leave empty if your operator discovers all ServiceMonitors in the namespace. | `{}` |
+| `metrics.serviceMonitor.additionalLabels`   | Additional labels added to the ServiceMonitor metadata                                                       | `{}`                            |
+| `metrics.serviceMonitor.annotations`        | Annotations added to the ServiceMonitor metadata                                                             | `{}`                            |
+| `metrics.serviceMonitor.scheme`             | Endpoint scheme. Empty defaults to `http`.                                                                   | `""`                            |
+| `metrics.serviceMonitor.tlsConfig`          | TLS configuration for the scrape endpoint                                                                    | `{}`                            |
+| `metrics.serviceMonitor.credentialsSecret`  | Name of the Secret containing `metrics-username` and `metrics-password` keys for basic auth. Leave empty to disable basic auth. | `""` |
 
 ### Persistence parameters
 
-| Name                             | Description                                          | Value           |
-|----------------------------------|------------------------------------------------------|-----------------|
-| `persistence.watched.enabled`    | Enable PVC for watched import files                  | `true`          |
-| `persistence.watched.size`       | Size of the watched files PVC                        | `1Gi`           |
-| `persistence.watched.storageClass` | Storage class (empty = cluster default)            | `""`            |
-| `persistence.watched.accessMode` | PVC access mode                                      | `ReadWriteOnce` |
-| `persistence.public.enabled`     | Enable PVC for public assets                         | `true`          |
-| `persistence.public.size`        | Size of the public assets PVC                        | `1Gi`           |
-| `persistence.public.storageClass`| Storage class (empty = cluster default)              | `""`            |
-| `persistence.public.accessMode`  | PVC access mode                                      | `ReadWriteOnce` |
-| `persistence.storage.enabled`    | Enable PVC for Active Storage uploads                | `true`          |
-| `persistence.storage.size`       | Size of the storage PVC                              | `1Gi`           |
-| `persistence.storage.storageClass`| Storage class (empty = cluster default)             | `""`            |
-| `persistence.storage.accessMode` | PVC access mode                                      | `ReadWriteOnce` |
-| `persistence.db.enabled`         | Enable PVC for database data directory               | `true`          |
-| `persistence.db.size`            | Size of the database PVC                             | `5Gi`           |
-| `persistence.db.storageClass`    | Storage class (empty = cluster default)              | `""`            |
-| `persistence.db.accessMode`      | PVC access mode                                      | `ReadWriteOnce` |
+| Name                              | Description                             | Value           |
+|-----------------------------------|-----------------------------------------|-----------------|
+| `persistence.watched.enabled`     | Enable PVC for watched import files     | `true`          |
+| `persistence.watched.size`        | Size of the watched files PVC           | `1Gi`           |
+| `persistence.watched.storageClass`| Storage class (empty = cluster default) | `""`            |
+| `persistence.watched.accessMode`  | PVC access mode                         | `ReadWriteOnce` |
+| `persistence.public.enabled`      | Enable PVC for public assets            | `true`          |
+| `persistence.public.size`         | Size of the public assets PVC           | `1Gi`           |
+| `persistence.public.storageClass` | Storage class (empty = cluster default) | `""`            |
+| `persistence.public.accessMode`   | PVC access mode                         | `ReadWriteOnce` |
+| `persistence.storage.enabled`     | Enable PVC for Active Storage uploads   | `true`          |
+| `persistence.storage.size`        | Size of the storage PVC                 | `1Gi`           |
+| `persistence.storage.storageClass`| Storage class (empty = cluster default) | `""`            |
+| `persistence.storage.accessMode`  | PVC access mode                         | `ReadWriteOnce` |
+| `persistence.db.enabled`          | Enable PVC for database data directory  | `true`          |
+| `persistence.db.size`             | Size of the database PVC                | `5Gi`           |
+| `persistence.db.storageClass`     | Storage class (empty = cluster default) | `""`            |
+| `persistence.db.accessMode`       | PVC access mode                         | `ReadWriteOnce` |
 
 ---
 
@@ -270,7 +290,7 @@ SMTP is optional. If left unconfigured, email sending will fail silently; all ot
 
 The `env` block populates a ConfigMap that is loaded by both the web and Sidekiq containers. Key fields to configure:
 
-- **`APPLICATION_HOSTS`** and **`RAILS_APPLICATION_CONFIG_HOSTS`** must include every hostname the app is reachable at, or Rails will reject the request with a `blocked host` error. Set both to match `ingress.host`.
+- **`APPLICATION_HOSTS`** and **`RAILS_APPLICATION_CONFIG_HOSTS`** must include every hostname the app is reachable at, or Rails will reject the request with a `blocked host` error. `RAILS_APPLICATION_CONFIG_HOSTS` defaults to `ingress.host` when left empty.
 - **`RAILS_ENV`** should be `production` for real deployments. Using `development` enables more verbose logging and disables some caching.
 - **`STORE_GEODATA`** controls whether reverse-geocoding data is cached locally. Set to `false` to rely solely on external APIs.
 - **`timeZone`** accepts any [Rails time zone string](https://api.rubyonrails.org/classes/ActiveSupport/TimeZone.html) (e.g. `Europe/Berlin`, `America/New_York`).
@@ -287,6 +307,56 @@ ingress:
         - dawarich.example.com
 env:
   APPLICATION_PROTOCOL: https
+```
+
+### Metrics and ServiceMonitor
+
+Since Dawarich 1.7.7, metrics are served in-process by each application:
+
+- The **web container** exposes a Prometheus-compatible endpoint at `/metrics` on its main port (3000), aggregating both web and Sidekiq metrics.
+- The **Sidekiq container** runs its own in-process metrics exporter on `PROMETHEUS_EXPORTER_PORT` (default `9394`). The web container fetches these internally via `SIDEKIQ_METRICS_URL`.
+
+To enable metrics, set `metrics.enabled: true`. This sets `PROMETHEUS_EXPORTER_ENABLED=true` on both containers. On Kubernetes, `SIDEKIQ_METRICS_URL` defaults to `http://localhost:9394/metrics` since both containers share a Pod and are reachable via localhost.
+
+To also create a `ServiceMonitor` for the Prometheus Operator (or VictoriaMetrics VMAgent):
+
+```yaml
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    credentialsSecret: dawarich-secret
+```
+
+The `ServiceMonitor` is only rendered when the `monitoring.coreos.com/v1` CRD is present in the cluster.
+
+#### Metrics basic auth
+
+Dawarich 1.7.7 introduced `METRICS_USERNAME` and `METRICS_PASSWORD` to protect the `/metrics` endpoint. When `metrics.serviceMonitor.credentialsSecret` is set, the chart:
+
+1. Injects `METRICS_USERNAME` and `METRICS_PASSWORD` into the web container from the named Secret.
+2. Configures `basicAuth` on the ServiceMonitor endpoint so the scraper authenticates correctly.
+
+Add the credentials to your secret before enabling:
+
+```bash
+kubectl create secret generic dawarich-secret \
+  --from-literal=smtp-password=my-smtp-password \
+  --from-literal=metrics-username=prometheus \
+  --from-literal=metrics-password=my-metrics-password \
+  --namespace dawarich
+```
+
+#### ServiceMonitor operator discovery
+
+By default `metrics.serviceMonitor.selector` is empty, which works when the Prometheus Operator or VMAgent is configured to discover all ServiceMonitors in the namespace. If your operator uses a label-based `serviceMonitorSelector` (common with `kube-prometheus-stack`), add the required label:
+
+```yaml
+metrics:
+  serviceMonitor:
+    selector:
+      release: kube-prometheus-stack
 ```
 
 ### Resource requests and limits
