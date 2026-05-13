@@ -1,9 +1,14 @@
+## Override the name of the chart
+nameOverride: ""
+## Override the fully qualified app name
+fullnameOverride: ""
+
 ## Image parameters
 image:
   ## Dawarich image repository
   repository: freikin/dawarich
   ## Dawarich image tag
-  tag: "1.6.1"
+  tag: "1.7.7"
 
 ## Service parameters
 service:
@@ -84,16 +89,20 @@ env:
   BACKGROUND_PROCESSING_CONCURRENCY: 10
   ## Protocol the app is served over (http or https)
   APPLICATION_PROTOCOL: http
-  ## Enable Prometheus exporter
+  ## Enable Prometheus metrics export
   PROMETHEUS_EXPORTER_ENABLED: "false"
-  ## Prometheus exporter bind address
-  PROMETHEUS_EXPORTER_HOST: "0.0.0.0"
-  ## Prometheus exporter port
+  ## Port the in-process Sidekiq metrics exporter binds to
   PROMETHEUS_EXPORTER_PORT: "9394"
+  ## Internal URL the web container uses to fetch Sidekiq metrics.
+  ## Override when the Sidekiq container hostname differs from the docker-compose default
+  ## (e.g. use http://localhost:9394/metrics on Kubernetes where both run in the same pod).
+  SIDEKIQ_METRICS_URL: "http://localhost:9394/metrics"
   ## Persist downloaded reverse-geocoding data locally
   STORE_GEODATA: "true"
-  ## Additional trusted hosts for Rails (usually same as APPLICATION_HOSTS)
-  RAILS_APPLICATION_CONFIG_HOSTS: "dawarich.example.com"
+  ## Additional trusted hosts for Rails (defaults to ingress.host if unset)
+  RAILS_APPLICATION_CONFIG_HOSTS: ""
+  ## Timezone used by the application
+  timeZone: "UTC"
 
 ## SMTP parameters
 smtp:
@@ -150,8 +159,38 @@ resources: {}
 
 ## Metrics parameters
 metrics:
-  ## Enable metrics collection
+  ## Enable metrics collection (sets PROMETHEUS_EXPORTER_ENABLED and renders the ServiceMonitor)
   enabled: false
+  serviceMonitor:
+    ## Enable a Prometheus ServiceMonitor
+    enabled: false
+    ## Namespace to deploy the ServiceMonitor into (defaults to release namespace)
+    namespace: ""
+    ## Scrape interval
+    interval: "30s"
+    ## Scrape timeout (empty uses the global default)
+    scrapeTimeout: ""
+    ## When true, preserves metric labels that collide with target labels
+    honorLabels: false
+    ## [RelabelConfigs] to apply to samples before scraping
+    relabelings: []
+    ## [MetricRelabelConfigs] to apply to samples before ingestion
+    metricRelabelings: []
+    ## Labels added to the ServiceMonitor metadata for operator discovery.
+    ## Only needed if your VMAgent/Prometheus Operator filters by serviceMonitorSelector labels.
+    ## Leave empty if your operator discovers all ServiceMonitors in the namespace.
+    selector: {}
+    ## Additional labels for the ServiceMonitor metadata
+    additionalLabels: {}
+    ## Annotations for the ServiceMonitor metadata
+    annotations: {}
+    ## Endpoint scheme (empty defaults to http)
+    scheme: ""
+    ## TLS configuration for the endpoint
+    tlsConfig: {}
+    ## Name of the secret containing metrics-username and metrics-password keys for basic auth.
+    ## Leave empty to disable basic auth.
+    credentialsSecret: ""
 
 ## Persistence parameters
 ## ref: https://kubernetes.io/docs/concepts/storage/persistent-volumes/
@@ -162,7 +201,7 @@ persistence:
     enabled: true
     ## PVC size
     size: 1Gi
-    ## Storage class name. Leave empty to use the default storage class.
+    ## Storage class name. Leave empty to use the cluster default storage class.
     storageClass: ""
     ## PVC access mode
     accessMode: ReadWriteOnce
@@ -172,7 +211,7 @@ persistence:
     enabled: true
     ## PVC size
     size: 1Gi
-    ## Storage class name. Leave empty to use the default storage class.
+    ## Storage class name. Leave empty to use the cluster default storage class.
     storageClass: ""
     ## PVC access mode
     accessMode: ReadWriteOnce
@@ -182,7 +221,7 @@ persistence:
     enabled: true
     ## PVC size
     size: 1Gi
-    ## Storage class name. Leave empty to use the default storage class.
+    ## Storage class name. Leave empty to use the cluster default storage class.
     storageClass: ""
     ## PVC access mode
     accessMode: ReadWriteOnce
@@ -192,7 +231,7 @@ persistence:
     enabled: true
     ## PVC size
     size: 5Gi
-    ## Storage class name. Leave empty to use the default storage class.
+    ## Storage class name. Leave empty to use the cluster default storage class.
     storageClass: ""
     ## PVC access mode
     accessMode: ReadWriteOnce
