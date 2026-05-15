@@ -1,0 +1,121 @@
+## @section Image parameters
+##
+
+## ESPHome dashboard image
+## ref: https://github.com/esphome/esphome/releases
+## @param image.repository ESPHome image repository
+## @param image.tag ESPHome image tag
+##
+image:
+  repository: ghcr.io/esphome/esphome
+  tag: "2026.4.5"
+
+## @section ESPHome parameters
+##
+
+## @param secretName Name of a pre-existing Secret containing dashboard credentials (USERNAME, PASSWORD)
+## Create the Secret before installing this chart:
+##   kubectl create secret generic esphome-dashboard-auth \
+##     --from-literal=USERNAME=admin \
+##     --from-literal=PASSWORD=changeme
+##
+secretName: ""
+
+## @param logLevel Log verbosity for the ESPHome dashboard
+## One of: debug | info | warning | error | critical
+##
+logLevel: "info"
+
+## @param replicaCount Number of ESPHome replicas
+##
+replicaCount: 1
+
+## @section Network parameters
+##
+
+## @param hostNetwork Enable host networking
+## Required so ESPHome can discover and flash ESP devices on the local network.
+##
+hostNetwork: true
+
+## @param dnsPolicy DNS policy to use when host networking is enabled
+##
+dnsPolicy: ClusterFirstWithHostNet
+
+## @section Persistence parameters
+##
+
+## @param persistence.enabled Enable a PersistentVolumeClaim for ESPHome configuration files
+## @param persistence.storageClass StorageClass for the config PVC ("" uses the cluster default)
+## @param persistence.accessMode PVC access mode
+## @param persistence.size Size of the config PVC
+##
+persistence:
+  enabled: true
+  storageClass: "longhorn"
+  accessMode: ReadWriteOnce
+  size: 500Mi
+
+## @section Service parameters
+##
+
+## @param service.type Kubernetes Service type
+## @param service.port Service port
+## @param service.targetPort Port ESPHome listens on inside the container
+##
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 6052
+
+## @section Ingress parameters
+##
+
+## @param ingress.enabled Enable an Ingress resource
+## @param ingress.ingressClassName IngressClass to use
+## Run `kubectl get ingressclass` to list available classes.
+## @param ingress.annotations Additional annotations for the Ingress resource
+## @param ingress.host Hostname at which ESPHome will be served
+## @param ingress.path Path prefix for the Ingress rule
+## @param ingress.tls Enable TLS termination at the Ingress controller
+## @param ingress.tlsSecretName Name of the TLS Secret (ignored when tls: false)
+##
+ingress:
+  enabled: false
+  ingressClassName: "traefik"
+  ## e.g.:
+  ## annotations:
+  ##   traefik.ingress.kubernetes.io/router.entrypoints: websecure
+  ##
+  annotations: {}
+  host: esphome.example.com
+  path: /
+  tls: true
+  tlsSecretName: ""
+
+## @section Scheduling parameters
+##
+
+## @param nodeSelector Node labels for pod assignment
+## ESPHome uses host networking — pin it to a node with physical access to the device network.
+## e.g.:
+##   nodeSelector:
+##     kubernetes.io/hostname: mynode
+##
+nodeSelector: {}
+
+## @section Resource parameters
+##
+
+## @param resources Resource requests and limits for the ESPHome container
+## ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+## e.g.:
+##   resources:
+##     limits:
+##       cpu: 500m
+##       memory: 500Mi
+##     requests:
+##       cpu: 10m
+##       memory: 25Mi
+##
+resources: {}

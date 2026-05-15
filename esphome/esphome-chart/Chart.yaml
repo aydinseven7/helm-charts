@@ -1,0 +1,13 @@
+apiVersion: v2
+name: esphome
+version: 0.1.0
+appVersion: "2026.4.5"
+description: A Helm chart for deploying the ESPHome dashboard on Kubernetes
+keywords:
+  - esphome
+  - home-assistant
+  - espressif
+  - iot
+sources:
+  - https://github.com/esphome/esphome
+dependencies: []
