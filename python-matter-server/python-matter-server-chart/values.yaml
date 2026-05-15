@@ -1,0 +1,95 @@
+## @section Image parameters
+##
+
+## Python Matter Server image
+## ref: https://github.com/home-assistant-libs/python-matter-server/releases
+## @param image.repository Python Matter Server image repository
+## @param image.tag Python Matter Server image tag
+##
+image:
+  repository: ghcr.io/home-assistant-libs/python-matter-server
+  tag: "8.1.2"
+
+## @section Python Matter Server parameters
+##
+
+## @param logLevel Log verbosity for the Matter server
+## One of: silly | debug | info | notice | warn | error | fatal
+##
+logLevel: "info"
+
+## @param storagePath Path inside the container where Matter commissioning data is persisted
+##
+storagePath: "/data"
+
+## @param annotations Pod-level annotations
+## The AppArmor annotation disables confinement for the matter-server container,
+## which is required for Bluetooth and Matter transport to work correctly.
+## ref: https://kubernetes.io/docs/tutorials/security/apparmor/
+##
+annotations:
+  container.apparmor.security.beta.kubernetes.io/matter-server: unconfined
+
+## @param replicaCount Number of replicas
+##
+replicaCount: 1
+
+## @section Network parameters
+##
+
+## @param hostNetwork Enable host networking
+## Required for Matter UDP multicast and device discovery on the local network.
+##
+hostNetwork: true
+
+## @param dnsPolicy DNS policy to use when host networking is enabled
+##
+dnsPolicy: ClusterFirstWithHostNet
+
+## @section Persistence parameters
+##
+
+## @param persistence.enabled Enable a PersistentVolumeClaim for Matter commissioning data
+## @param persistence.storageClass StorageClass for the data PVC ("" uses the cluster default)
+## @param persistence.accessMode PVC access mode
+## @param persistence.size Size of the data PVC
+##
+persistence:
+  enabled: true
+  storageClass: "longhorn"
+  accessMode: ReadWriteOnce
+  size: 1Gi
+
+## @section Service parameters
+##
+
+## @param service.type Kubernetes Service type
+## @param service.port Matter WebSocket server port (used by Home Assistant)
+## @param service.targetPort Port the server listens on inside the container
+##
+service:
+  type: ClusterIP
+  port: 5580
+  targetPort: 5580
+
+## @section Scheduling parameters
+##
+
+## @param nodeSelector Node labels for pod assignment
+nodeSelector: {}
+
+## @section Resource parameters
+##
+
+## @param resources Resource requests and limits for the Matter Server container
+## ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+## e.g.:
+##   resources:
+##     limits:
+##       cpu: 500m
+##       memory: 500Mi
+##     requests:
+##       cpu: 10m
+##       memory: 25Mi
+##
+resources: {}
