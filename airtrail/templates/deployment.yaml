@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "airtrail.fullname" . }}
+  labels:
+    {{- include "airtrail.labels" . | nindent 4 }}
+    {{- include "airtrail.selectorLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.airtrail.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "airtrail.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "airtrail.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      {{- with .Values.airtrail.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.airtrail.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.airtrail.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      # Waits for the CNPG cluster's primary to be ready, similar in spirit to
+      # the compose file's "depends_on: db: condition: service_healthy"
+      initContainers:
+        - name: wait-for-db
+          image: postgres:16-alpine
+          env:
+            - name: PGHOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airtrail.cnpgSecretName" . }}
+                  key: host
+            - name: PGPORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airtrail.cnpgSecretName" . }}
+                  key: port
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airtrail.cnpgSecretName" . }}
+                  key: username
+            - name: PGDATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airtrail.cnpgSecretName" . }}
+                  key: dbname
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE"; do
+                echo "waiting for db...";
+                sleep 2;
+              done
+      containers:
+        - name: airtrail
+          image: "{{ .Values.airtrail.image.repository }}:{{ .Values.airtrail.image.tag }}"
+          imagePullPolicy: {{ .Values.airtrail.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "airtrail.fullname" . }}-config
+          env:
+            # CNPG's "-app" secret already exposes a ready-to-use connection
+            # string under the "uri" key (postgresql://user:pass@host:port/db)
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airtrail.cnpgSecretName" . }}
+                  key: uri
+          {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: 3000
+          {{- if .Values.airtrail.uploads.enabled }}
+          volumeMounts:
+            - name: uploads
+              mountPath: {{ .Values.airtrail.uploads.uploadLocation }}
+          {{- end }}
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          {{- with .Values.airtrail.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- if .Values.airtrail.uploads.enabled }}
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: {{ .Values.airtrail.uploads.existingClaim | default (printf "%s-uploads" (include "airtrail.fullname" .)) }}
+      {{- end }}

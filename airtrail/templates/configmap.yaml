@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "airtrail.fullname" . }}-config
+  labels:
+    {{- include "airtrail.labels" . | nindent 4 }}
+data:
+  ORIGIN: {{ .Values.airtrail.origin | quote }}
+  {{- if .Values.airtrail.uploads.enabled }}
+  UPLOAD_LOCATION: {{ .Values.airtrail.uploads.uploadLocation | quote }}
+  {{- end }}

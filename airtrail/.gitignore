@@ -1,0 +1,10 @@
+# Packaged charts (helm package output)
+*.tgz
+
+# Helm dependency artifacts
+charts/*.tgz
+Chart.lock
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db

@@ -1,0 +1,30 @@
+{{- if and .Values.postgresql.create (not .Values.postgresql.existingCluster) }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ include "airtrail.cnpgClusterName" . }}
+  labels:
+    {{- include "airtrail.labels" . | nindent 4 }}
+spec:
+  instances: {{ .Values.postgresql.instances }}
+  {{- if .Values.postgresql.imageName }}
+  imageName: {{ .Values.postgresql.imageName }}
+  {{- end }}
+  storage:
+    size: {{ .Values.postgresql.storage.size }}
+    {{- if .Values.postgresql.storage.storageClass }}
+    storageClass: {{ .Values.postgresql.storage.storageClass }}
+    {{- end }}
+  bootstrap:
+    initdb:
+      database: {{ .Values.postgresql.database }}
+      owner: {{ .Values.postgresql.owner }}
+      {{- if .Values.postgresql.existingSecret }}
+      secret:
+        name: {{ .Values.postgresql.existingSecret }}
+      {{- end }}
+  {{- with .Values.postgresql.resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

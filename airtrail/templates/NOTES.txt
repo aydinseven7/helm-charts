@@ -1,0 +1,18 @@
+AirTrail has been deployed as release {{ .Release.Name }} in namespace {{ .Release.Namespace }}.
+
+{{- if .Values.ingress.enabled }}
+It should become reachable at:
+{{- range .Values.ingress.hosts }}
+  http://{{ .host }}
+{{- end }}
+{{- else }}
+No Ingress was enabled. To reach it for now, port-forward:
+
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "airtrail.fullname" . }} 3000:{{ .Values.airtrail.service.port }}
+
+then open http://localhost:3000
+{{- end }}
+
+Remember to set airtrail.origin in values.yaml to the externally-reachable
+URL(s) AirTrail will be accessed from (this maps to the ORIGIN env var in the
+docker-compose setup).

@@ -1,0 +1,17 @@
+{{- if and .Values.airtrail.uploads.enabled (not .Values.airtrail.uploads.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "airtrail.fullname" . }}-uploads
+  labels:
+    {{- include "airtrail.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.airtrail.uploads.storageClass }}
+  storageClassName: {{ .Values.airtrail.uploads.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.airtrail.uploads.size }}
+{{- end }}

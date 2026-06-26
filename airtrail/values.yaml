@@ -1,0 +1,114 @@
+# Default values for airtrail.
+
+airtrail:
+  image:
+    repository: johly/airtrail
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  replicaCount: 1
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  # Externally reachable origin(s) for the app (comma separated for multiple)
+  origin: "http://localhost:3000"
+
+  resources: {}
+  #  requests:
+  #    cpu: 100m
+  #    memory: 128Mi
+  #  limits:
+  #    memory: 512Mi
+
+  uploads:
+    enabled: true
+    # Set to true to use an emptyDir instead of a PVC (e.g. for quick testing)
+    existingClaim: ""
+    storageClass: ""
+    size: 2Gi
+    uploadLocation: /app/uploads
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+postgresql:
+  # If true, this chart creates a CNPG Cluster resource for you.
+  # Set to false if you already have a Cluster you manage yourself, and set
+  # existingCluster below to its name instead.
+  create: true
+
+  # Name of the Cluster resource to create. Defaults to "<release>-db".
+  clusterName: ""
+
+  # Name of an existing CNPG Cluster to use instead of creating one.
+  # When set, postgresql.create is effectively ignored and no Cluster is created.
+  existingCluster: ""
+
+  instances: 1
+
+  # Optional: pin a specific postgres image used by the operator, e.g.
+  # ghcr.io/cloudnative-pg/postgresql:16.4
+  imageName: ""
+
+  storage:
+    size: 5Gi
+    storageClass: ""
+
+  # Passed to spec.bootstrap.initdb - creates this database and owner user
+  # the first time the cluster is bootstrapped
+  database: airtrail
+  owner: airtrail
+
+  # Name of an existing Secret (with "username"/"password" keys) to seed the
+  # owner user's credentials with, instead of letting CNPG generate a random
+  # password. When set, CNPG uses this secret as the cluster's "-app" secret
+  # directly rather than creating a separate one. Only applies when
+  # postgresql.create is true.
+  existingSecret: ""
+
+  resources: {}
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: airtrail.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: airtrail-tls
+  #    hosts:
+  #      - airtrail.example.com
+
+httpRoute:
+  enabled: false
+  annotations: {}
+  # Gateway API parentRefs - https://gateway-api.sigs.k8s.io/api-types/httproute/#attaching-to-gateways
+  parentRefs: []
+  #  - name: my-gateway
+  #    namespace: gateway-system
+  #    sectionName: https
+  hostnames:
+    - airtrail.example.com
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      # Gateway API filters for this rule - https://gateway-api.sigs.k8s.io/api-types/httproute/#filters-optional
+      filters: []
+      #  - type: RequestHeaderModifier
+      #    requestHeaderModifier:
+      #      add:
+      #        - name: X-Forwarded-Proto
+      #          value: https
+
+# Extra environment variables appended to the airtrail container as-is
+extraEnv: []
+#  - name: SOME_FLAG
+#    value: "true"

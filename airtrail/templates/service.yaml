@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "airtrail.fullname" . }}
+  labels:
+    {{- include "airtrail.labels" . | nindent 4 }}
+    {{- include "airtrail.selectorLabels" . | nindent 4 }}
+spec:
+  type: {{ .Values.airtrail.service.type }}
+  selector:
+    {{- include "airtrail.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.airtrail.service.port }}
+      targetPort: http
