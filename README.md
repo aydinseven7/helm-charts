@@ -22,6 +22,27 @@ Self-hosted photo and video management. Includes a custom chart for the Immich s
 | [`immich/database-helm-chart`](immich/database-helm-chart/) | PostgreSQL 14 with pgvecto.rs + VectorChord |
 | [`immich/immich-ml-helper-chart`](immich/immich-ml-helper-chart/) | Standalone ML pod for separate node/cluster deployments |
 
+### [AirTrail](airtrail/)
+Self-hosted personal flight tracking system. Includes a custom chart for the AirTrail app, with optional CloudNativePG-backed PostgreSQL provisioning.
+
+| Chart | Description |
+|-------|-------------|
+| [`airtrail`](airtrail/) | AirTrail server, with optional CNPG `Cluster` provisioning |
+
+### [ESPHome](esphome/)
+Self-hosted dashboard for building and flashing ESPHome firmware, commonly paired with Home Assistant.
+
+| Chart | Description |
+|-------|-------------|
+| [`esphome/esphome-chart`](esphome/esphome-chart/) | ESPHome dashboard |
+
+### [Python Matter Server](python-matter-server/)
+Self-hosted Matter controller server, commonly paired with Home Assistant.
+
+| Chart | Description |
+|-------|-------------|
+| [`python-matter-server/python-matter-server-chart`](python-matter-server/python-matter-server-chart/) | Python Matter Server |
+
 ## Usage
 
 All charts are packaged and published to the GitHub Container Registry as OCI artifacts. No Helm repo add step is needed — install directly with `helm install`:
@@ -39,6 +60,9 @@ helm install <release-name> oci://ghcr.io/aydinseven7/helm-charts/<chart-name> -
 | `immich` | `oci://ghcr.io/aydinseven7/helm-charts/immich` |
 | `immich-database` | `oci://ghcr.io/aydinseven7/helm-charts/immich-database` |
 | `immich-ml-helper` | `oci://ghcr.io/aydinseven7/helm-charts/immich-ml-helper` |
+| `airtrail` | `oci://ghcr.io/aydinseven7/helm-charts/airtrail` |
+| `esphome` | `oci://ghcr.io/aydinseven7/helm-charts/esphome` |
+| `python-matter-server` | `oci://ghcr.io/aydinseven7/helm-charts/python-matter-server` |
 
 To pin a specific version, append `--version <chart-version>`:
 
