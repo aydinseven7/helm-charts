@@ -29,6 +29,10 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.airtrail.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       # Waits for the CNPG cluster's primary to be ready, similar in spirit to
       # the compose file's "depends_on: db: condition: service_healthy"
       initContainers:
@@ -67,6 +71,10 @@ spec:
         - name: airtrail
           image: "{{ .Values.airtrail.image.repository }}:{{ .Values.airtrail.image.tag }}"
           imagePullPolicy: {{ .Values.airtrail.image.pullPolicy }}
+          {{- with .Values.airtrail.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ include "airtrail.fullname" . }}-config

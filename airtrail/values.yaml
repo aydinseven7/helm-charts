@@ -22,6 +22,16 @@ airtrail:
   #  limits:
   #    memory: 512Mi
 
+  # The AirTrail image runs as the "node" user (UID/GID 1000). fsGroup makes
+  # Kubernetes chown the uploads volume to that group on mount so it stays
+  # writable regardless of the PV's default ownership (e.g. Longhorn mounts
+  # new volumes as root:root).
+  podSecurityContext:
+    fsGroup: 1000
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+
   uploads:
     enabled: true
     # Set to true to use an emptyDir instead of a PVC (e.g. for quick testing)

@@ -59,6 +59,8 @@ This removes all the Kubernetes components associated with the chart, including 
 | `airtrail.nodeSelector`          | Node labels for AirTrail pod assignment                                      | `{}`              |
 | `airtrail.tolerations`           | Tolerations for AirTrail pod assignment                                      | `[]`              |
 | `airtrail.affinity`              | Affinity for AirTrail pod assignment                                         | `{}`              |
+| `airtrail.podSecurityContext`    | Pod-level security context (e.g. `fsGroup`, needed so the uploads volume is writable by the image's non-root user) | `{fsGroup: 1000}` |
+| `airtrail.securityContext`       | AirTrail container security context (matches the image's `node` user, UID/GID 1000) | `{runAsUser: 1000, runAsGroup: 1000}` |
 | `extraEnv`                       | Extra environment variables appended to the AirTrail container as-is        | `[]`              |
 
 ### Uploads persistence parameters
