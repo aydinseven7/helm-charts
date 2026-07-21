@@ -6,7 +6,7 @@
 ##
 image:
   repository: ghcr.io/immich-app/immich-server
-  tag: "v2.7.5"
+  tag: "v3.0.3"
 
 ## External dependency parameters
 
@@ -149,7 +149,7 @@ machineLearning:
   ##
   image:
     repository: ghcr.io/immich-app/immich-machine-learning
-    tag: "v2.7.5"
+    tag: "v3.0.3"
 
   ## Extra environment variables for the ML container
   ## Provide as a map of key/value pairs.
@@ -255,3 +255,76 @@ ingress:
   ##         - immich.example.com
   ##
   tls: []
+
+## HTTPRoute parameters (Gateway API)
+
+httpRoute:
+  ## Enable an HTTPRoute resource
+  ## Requires the Kubernetes Gateway API CRDs and a Gateway API implementation
+  ## (e.g. Istio, Envoy Gateway, Cilium) installed in the cluster, plus an
+  ## existing Gateway resource to attach to.
+  ##
+  enabled: false
+  ## References to the Gateway(s) this HTTPRoute attaches to
+  ## Ref: https://gateway-api.sigs.k8s.io/reference/api-types/httproute/#attaching-to-gateways
+  ## e.g.:
+  ##   parentRefs:
+  ##     - name: my-gateway
+  ##       namespace: gateway-system
+  ##
+  parentRefs: []
+  ## Hostname at which Immich will be served
+  ##
+  host: immich.example.com
+  ## Path prefix for the Immich HTTPRoute rule
+  ##
+  path: /
+  ## Additional labels for the HTTPRoute resource
+  ##
+  labels: {}
+  ## Additional annotations for the HTTPRoute resource
+  ##
+  extraAnnotations: {}
+
+## Metrics parameters
+
+metrics:
+  ## Enable Prometheus metrics on the Immich server
+  ## Sets IMMICH_TELEMETRY_INCLUDE=all and exposes the api (8081) and
+  ## background-jobs (8082) metrics ports.
+  ##
+  enabled: false
+
+  serviceMonitor:
+    ## Create a ServiceMonitor for the Prometheus Operator / VictoriaMetrics Operator
+    ## Requires the monitoring.coreos.com/v1 ServiceMonitor CRD to be installed in the cluster.
+    ##
+    enabled: true
+    ## Namespace to deploy the ServiceMonitor into
+    ## Empty string uses the release namespace.
+    ##
+    namespace: ""
+    ## Scrape interval
+    ##
+    interval: "30s"
+    ## Scrape timeout (empty uses the operator/global default)
+    ##
+    scrapeTimeout: ""
+    ## Preserve metric labels that collide with target labels
+    ##
+    honorLabels: false
+    ## RelabelConfigs applied to samples before scraping
+    ## Ref: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#relabel_config
+    ##
+    relabelings: []
+    ## MetricRelabelConfigs applied to samples before ingestion
+    ##
+    metricRelabelings: []
+    ## Additional labels for the ServiceMonitor metadata
+    ## Set these if your Prometheus/VMAgent only discovers ServiceMonitors matching
+    ## specific labels (serviceMonitorSelector / serviceScrapeSelector).
+    ##
+    additionalLabels: {}
+    ## Additional annotations for the ServiceMonitor metadata
+    ##
+    annotations: {}

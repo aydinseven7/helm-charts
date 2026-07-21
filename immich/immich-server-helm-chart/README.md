@@ -156,6 +156,17 @@ Credentials are sourced from a Kubernetes Secret. The fields below tell the char
 | `ingress.path`            | Path prefix                                                                   | `/`                   |
 | `ingress.tls`             | TLS configuration (leave `[]` if your proxy handles TLS termination upstream) | `[]`                  |
 
+### HTTPRoute parameters (Gateway API)
+
+| Name                       | Description                                                    | Value                 |
+|----------------------------|------------------------------------------------------------------|-----------------------|
+| `httpRoute.enabled`        | Enable an HTTPRoute resource                                     | `false`               |
+| `httpRoute.parentRefs`     | References to the Gateway(s) this HTTPRoute attaches to          | `[]`                  |
+| `httpRoute.host`           | Hostname at which Immich will be served                          | `immich.example.com`  |
+| `httpRoute.path`           | Path prefix                                                      | `/`                   |
+| `httpRoute.labels`         | Additional labels for the HTTPRoute resource                     | `{}`                  |
+| `httpRoute.extraAnnotations` | Additional annotations for the HTTPRoute resource               | `{}`                  |
+
 ## Configuration and installation details
 
 ### Connecting to external services
@@ -202,6 +213,19 @@ ingress:
     external-dns.alpha.kubernetes.io/target: <tunnel-id>.cfargotunnel.com
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     nginx.ingress.kubernetes.io/proxy-body-size: 4G
+```
+
+### Enabling HTTPRoute (Gateway API)
+
+To expose Immich via a Gateway API `Gateway` instead of an Ingress:
+
+```yaml
+httpRoute:
+  enabled: true
+  parentRefs:
+    - name: my-gateway
+      namespace: gateway-system
+  host: immich.example.com
 ```
 
 ### Disabling Machine Learning
