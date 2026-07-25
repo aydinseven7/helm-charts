@@ -1,16 +1,17 @@
 ## @section Image parameters
 ##
 
-## Python Matter Server image
-## ref: https://github.com/home-assistant-libs/python-matter-server/releases
-## @param image.repository Python Matter Server image repository
-## @param image.tag Python Matter Server image tag
+## Matter server image (matter-js/matterjs-server, successor to the archived
+## home-assistant-libs/python-matter-server)
+## ref: https://github.com/matter-js/matterjs-server/releases
+## @param image.repository Matter server image repository
+## @param image.tag Matter server image tag
 ##
 image:
-  repository: ghcr.io/home-assistant-libs/python-matter-server
-  tag: "8.1.2"
+  repository: ghcr.io/matter-js/matterjs-server
+  tag: "1.3.1"
 
-## @section Python Matter Server parameters
+## @section Matter Server parameters
 ##
 
 ## @param logLevel Log verbosity for the Matter server
@@ -21,6 +22,20 @@ logLevel: "info"
 ## @param storagePath Path inside the container where Matter commissioning data is persisted
 ##
 storagePath: "/data"
+
+## @param productionMode Set to true when the server is accessed through a reverse proxy/ingress
+## Makes the built-in dashboard connect to the WebSocket server at the current
+## URL instead of prompting for a server address (only needed behind a proxy;
+## not needed with hostNetwork + direct/Service access).
+##
+productionMode: false
+
+## @param fsGroup Group ownership applied recursively to the data PVC on mount
+## The matterjs-server image runs as a non-root user (uid/gid 1000) and its
+## Dockerfile chowns /data to 1000:1000, so this must stay 1000 unless the
+## upstream image changes its runtime user.
+##
+fsGroup: 1000
 
 ## @param annotations Pod-level annotations
 ## The AppArmor annotation disables confinement for the matter-server container,
@@ -64,7 +79,7 @@ persistence:
 ##
 
 ## @param service.type Kubernetes Service type
-## @param service.port Matter WebSocket server port (used by Home Assistant)
+## @param service.port Matter WebSocket API + built-in dashboard port (used by Home Assistant and for browser access)
 ## @param service.targetPort Port the server listens on inside the container
 ##
 service:

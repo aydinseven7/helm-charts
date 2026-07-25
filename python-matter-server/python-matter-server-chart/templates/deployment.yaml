@@ -24,6 +24,8 @@ spec:
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      securityContext:
+        fsGroup: {{ .Values.fsGroup }}
       containers:
         - name: matter-server
           image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
@@ -32,6 +34,10 @@ spec:
               value: {{ .Values.logLevel | quote }}
             - name: STORAGE_PATH
               value: {{ .Values.storagePath | quote }}
+            {{- if .Values.productionMode }}
+            - name: PRODUCTION_MODE
+              value: "true"
+            {{- end }}
           ports:
             - name: websocket
               containerPort: 5580
