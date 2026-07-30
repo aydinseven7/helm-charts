@@ -6,7 +6,7 @@
 ##
 image:
   repository: ghcr.io/immich-app/immich-server
-  tag: "v3.0.3"
+  tag: "v3.1.0"
 
 ## External dependency parameters
 
@@ -149,7 +149,7 @@ machineLearning:
   ##
   image:
     repository: ghcr.io/immich-app/immich-machine-learning
-    tag: "v3.0.3"
+    tag: "v3.1.0"
 
   ## Extra environment variables for the ML container
   ## Provide as a map of key/value pairs.
