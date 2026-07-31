@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   tag:
@@ -35,6 +36,13 @@ jobs:
           tool: git-cliff
 
       - name: Detect version bumps, update changelogs, and push tags
+        env:
+          # A tag pushed with the default GITHUB_TOKEN doesn't trigger other
+          # workflows' `on: push` events (GitHub's anti-recursion guard), so
+          # publish-charts.yml would never fire on its own. Explicitly
+          # dispatching it below via `gh workflow run` isn't subject to that
+          # restriction.
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
@@ -103,4 +111,7 @@ jobs:
             echo "Creating tag $TAG"
             git tag "$TAG" HEAD
             git push origin "$TAG"
+
+            echo "Dispatching Release Helm Charts for $TAG"
+            gh workflow run "Release Helm Charts" --ref master -f "tag=${TAG}"
           done <<< "$CHANGED"
