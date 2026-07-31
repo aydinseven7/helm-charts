@@ -1,0 +1,106 @@
+name: Tag Chart Releases
+
+# Watches for Chart.yaml version bumps landing on master. For each chart whose
+# version changed, it:
+#   1. generates that chart's CHANGELOG.md entry with git-cliff, scoped to
+#      commits touching only that chart's own directory since its last tag
+#   2. commits the changelog update to master
+#   3. creates and pushes the `<chart-name>/v<version>` tag on that commit
+#
+# The tag push is what triggers publish-charts.yml, so bumping a chart's
+# version and merging is now the whole release step.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "**/Chart.yaml"
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: Tag bumped chart versions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+
+      - name: Detect version bumps, update changelogs, and push tags
+        run: |
+          set -euo pipefail
+
+          BEFORE="${{ github.event.before }}"
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            # First push seen on this branch (or force-push with no prior ref) -
+            # diff against the empty tree so every current Chart.yaml is considered.
+            BEFORE=$(git hash-object -t tree /dev/null)
+          fi
+
+          CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}" -- '**/Chart.yaml')
+          if [ -z "$CHANGED" ]; then
+            echo "No Chart.yaml changes in this push."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          while IFS= read -r chart_file; do
+            [ -f "$chart_file" ] || continue  # skip deleted Chart.yaml files
+
+            NAME=$(grep -m1 '^name:' "$chart_file" | awk '{print $2}')
+            VERSION=$(grep -m1 '^version:' "$chart_file" | awk '{print $2}')
+
+            if [ -z "$NAME" ] || [ -z "$VERSION" ]; then
+              echo "Could not read name/version from $chart_file, skipping." >&2
+              continue
+            fi
+
+            TAG="${NAME}/v${VERSION}"
+
+            if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1 || \
+               git ls-remote --exit-code --tags origin "$TAG" >/dev/null 2>&1; then
+              echo "Tag $TAG already exists, skipping ($chart_file)."
+              continue
+            fi
+
+            CHART_DIR=$(dirname "$chart_file")
+            CHANGELOG="${CHART_DIR}/CHANGELOG.md"
+
+            # Last tag released for *this* chart, to scope the changelog range.
+            PREV_TAG=$(git tag -l "${NAME}/v*" | sort -V | tail -1)
+            RANGE="HEAD"
+            if [ -n "$PREV_TAG" ]; then
+              RANGE="${PREV_TAG}..HEAD"
+            fi
+
+            echo "Generating changelog for $NAME ($RANGE, path ${CHART_DIR})"
+            if [ -f "$CHANGELOG" ]; then
+              git-cliff --config cliff.toml --include-path "${CHART_DIR}/**" \
+                --tag "v${VERSION}" --prepend "$CHANGELOG" "$RANGE"
+            else
+              git-cliff --config cliff.toml --include-path "${CHART_DIR}/**" \
+                --tag "v${VERSION}" --output "$CHANGELOG" "$RANGE"
+            fi
+
+            if ! git diff --quiet -- "$CHANGELOG"; then
+              git add "$CHANGELOG"
+              git commit -m "chore(${NAME}): update changelog for v${VERSION}"
+              git push origin HEAD:master
+            else
+              echo "Changelog for $NAME unchanged, nothing to commit."
+            fi
+
+            echo "Creating tag $TAG"
+            git tag "$TAG" HEAD
+            git push origin "$TAG"
+          done <<< "$CHANGED"

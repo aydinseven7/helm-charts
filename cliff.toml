@@ -1,0 +1,50 @@
+# Shared git-cliff config for every chart in this repo.
+# Each chart's CHANGELOG.md is generated separately by tag-releases.yml, which
+# scopes the commit range to that chart's own directory via `--include-path`
+# and passes its own `--tag`/`--prepend` target — this file only defines how
+# commits are grouped and rendered.
+# docs: https://git-cliff.org/docs/configuration
+
+[changelog]
+# NOTE: `--prepend` finds where to insert new entries by literally matching this
+# header text against the top of the target file, then inserts right after it.
+# It must stay byte-for-byte identical to the header already at the top of every
+# chart's CHANGELOG.md, or new entries get dumped above the title instead.
+header = """
+# Changelog
+
+All notable changes to this chart are documented here.
+
+"""
+body = """
+{% if version %}\
+    ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+    ## [Unreleased]
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{% for commit in commits %}
+- {{ commit.message | upper_first | trim }}
+{% endfor %}
+{% endfor %}
+"""
+trim = true
+footer = ""
+
+[git]
+conventional_commits = false
+filter_unconventional = false
+filter_commits = false
+sort_commits = "oldest"
+
+# Matches this repo's existing "Feat: ...", "Fix: ..." style commit subjects.
+# Anything that doesn't match falls into "Changed" rather than being dropped.
+commit_parsers = [
+  { message = "^[Ff]eat", group = "Added" },
+  { message = "^[Aa]dd", group = "Added" },
+  { message = "^[Ff]ix", group = "Fixed" },
+  { message = "^[Rr]emove", group = "Removed" },
+  { message = "^[Dd]ocs?", group = "Documentation" },
+  { message = ".*", group = "Changed" },
+]
