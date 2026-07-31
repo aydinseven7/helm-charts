@@ -63,7 +63,7 @@ helm uninstall my-release
 | Name               | Description               | Value                      |
 |--------------------|---------------------------|----------------------------|
 | `image.repository` | ESPHome image repository  | `ghcr.io/esphome/esphome` |
-| `image.tag`        | ESPHome image tag         | `2026.4.5`                |
+| `image.tag`        | ESPHome image tag (`""` defaults to the chart's `appVersion`) | `""` |
 
 ### ESPHome parameters
 

@@ -36,3 +36,11 @@ app.kubernetes.io/name: {{ include "esphome.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: dashboard
 {{- end }}
+
+{{/*
+Image tag: uses .Values.image.tag when set, otherwise falls back to the
+chart's appVersion (Chart.yaml).
+*/}}
+{{- define "esphome.imageTag" -}}
+{{- .Values.image.tag | default .Chart.AppVersion -}}
+{{- end }}

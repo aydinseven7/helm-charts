@@ -4,11 +4,11 @@
 ## ESPHome dashboard image
 ## ref: https://github.com/esphome/esphome/releases
 ## @param image.repository ESPHome image repository
-## @param image.tag ESPHome image tag
+## @param image.tag ESPHome image tag ("" defaults to the chart's appVersion, see Chart.yaml)
 ##
 image:
   repository: ghcr.io/esphome/esphome
-  tag: "2026.7.3"
+  tag: ""
 
 ## @section ESPHome parameters
 ##
