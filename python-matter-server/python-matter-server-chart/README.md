@@ -63,7 +63,7 @@ helm uninstall my-release
 |------------------|-----------------------------------------------------------------------------------------------------------|------------------|
 | `logLevel`       | Log verbosity (`silly`, `debug`, `info`, `notice`, `warn`, `error`, `fatal`)                              | `info`           |
 | `storagePath`    | Path inside the container where Matter commissioning data is persisted                                   | `/data`          |
-| `productionMode` | Set `true` when accessed through a reverse proxy/ingress, so the dashboard connects to the WS server at the current URL instead of prompting for one | `false` |
+| `productionMode` | Set `true` when accessed through a reverse proxy/ingress, so the dashboard connects to the WS server at the current URL instead of prompting for one | `true` |
 | `fsGroup`        | Group ownership applied to the data PVC on mount (must match the image's runtime uid/gid, `1000`)         | `1000`           |
 | `annotations`    | Pod-level annotations (AppArmor confinement disabled by default)                                          | See values.yaml  |
 | `replicaCount`   | Number of replicas                                                                                         | `1`              |
@@ -91,6 +91,17 @@ helm uninstall my-release
 | `service.type`       | Kubernetes Service type                                                        | `ClusterIP` |
 | `service.port`       | Matter WebSocket API + built-in dashboard port (used by Home Assistant and for browser access) | `5580` |
 | `service.targetPort` | Port the server listens on inside the container                                | `5580`      |
+
+### HTTPRoute parameters
+
+| Name                        | Description                                                             | Value |
+|-----------------------------|--------------------------------------------------------------------------|-------|
+| `httpRoute.enabled`         | Create a Gateway API HTTPRoute for the dashboard/WebSocket API           | `false` |
+| `httpRoute.parentRefs`      | Gateway API parentRefs pointing at your Gateway                         | `[]`  |
+| `httpRoute.host`            | Hostname to route to this service                                       | `""`  |
+| `httpRoute.path`            | Path prefix to match                                                    | `/`   |
+| `httpRoute.labels`          | Extra labels for the HTTPRoute                                          | `{}`  |
+| `httpRoute.extraAnnotations`| Extra annotations for the HTTPRoute                                     | `{}`  |
 
 ### Scheduling parameters
 
@@ -121,6 +132,21 @@ The server ships a built-in web dashboard on the same port as the WebSocket API.
 ### Host networking and AppArmor
 
 Matter uses UDP multicast for device discovery and Bluetooth for commissioning. Both require host networking and an unconfined AppArmor profile. These are enabled by default — do not disable them without understanding the impact on device commissioning.
+
+### Exposing via Gateway API (HTTPRoute)
+
+If you're using the [Kubernetes Gateway API](https://gateway-api.sigs.k8s.io/) and want to reach the dashboard/WebSocket API through an existing Gateway instead of `hostNetwork` or a raw Service, set:
+
+```yaml
+httpRoute:
+  enabled: true
+  parentRefs:
+    - name: my-gateway
+      namespace: gateway
+  host: matter-server.example.com
+```
+
+This also requires the Gateway API CRDs to be installed in the cluster. Since traffic will no longer arrive at the same URL the dashboard was loaded from, set `productionMode: true` as well (see [Accessing the dashboard](#accessing-the-dashboard)).
 
 ### Pinning to a specific node
 
