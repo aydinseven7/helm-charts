@@ -30,7 +30,7 @@ spec:
       {{- end }}
       containers:
         - name: esphome
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          image: {{ .Values.image.repository }}:{{ include "esphome.imageTag" . }}
           envFrom:
             - secretRef:
                 name: {{ .Values.secretName }}
