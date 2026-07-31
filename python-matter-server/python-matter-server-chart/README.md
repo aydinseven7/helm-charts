@@ -63,10 +63,17 @@ helm uninstall my-release
 |------------------|-----------------------------------------------------------------------------------------------------------|------------------|
 | `logLevel`       | Log verbosity (`silly`, `debug`, `info`, `notice`, `warn`, `error`, `fatal`)                              | `info`           |
 | `storagePath`    | Path inside the container where Matter commissioning data is persisted                                   | `/data`          |
-| `productionMode` | Set `true` when accessed through a reverse proxy/ingress, so the dashboard connects to the WS server at the current URL instead of prompting for one | `true` |
+| `productionMode` | Set `true` when accessed through a reverse proxy/ingress, so the dashboard connects to the WS server at the current URL instead of prompting for one | `false` |
 | `fsGroup`        | Group ownership applied to the data PVC on mount (must match the image's runtime uid/gid, `1000`)         | `1000`           |
 | `annotations`    | Pod-level annotations (AppArmor confinement disabled by default)                                          | See values.yaml  |
 | `replicaCount`   | Number of replicas                                                                                         | `1`              |
+
+### Deployment metadata parameters
+
+| Name                     | Description                                                                    | Value |
+|--------------------------|----------------------------------------------------------------------------------|-------|
+| `deployment.extraLabels` | Extra labels for the Deployment resource itself                                | `{}`  |
+| `deployment.annotations` | Annotations for the Deployment resource itself (not the pod template)          | `{}`  |
 
 ### Network parameters
 
@@ -80,9 +87,12 @@ helm uninstall my-release
 | Name                       | Description                                                         | Value           |
 |----------------------------|---------------------------------------------------------------------|-----------------|
 | `persistence.enabled`      | Enable a PersistentVolumeClaim for Matter commissioning data        | `true`          |
+| `persistence.existingClaim`| Use an existing PVC instead of creating one (other `persistence.*` fields below are ignored) | `""` |
 | `persistence.storageClass` | StorageClass for the data PVC (`""` uses the cluster default)       | `longhorn`      |
 | `persistence.accessMode`   | PVC access mode                                                     | `ReadWriteOnce` |
 | `persistence.size`         | Size of the data PVC                                                | `1Gi`           |
+| `persistence.extraLabels`  | Extra labels for the PersistentVolumeClaim                          | `{}`            |
+| `persistence.annotations`  | Annotations for the PersistentVolumeClaim                           | `{}`            |
 
 ### Service parameters
 
@@ -91,6 +101,8 @@ helm uninstall my-release
 | `service.type`       | Kubernetes Service type                                                        | `ClusterIP` |
 | `service.port`       | Matter WebSocket API + built-in dashboard port (used by Home Assistant and for browser access) | `5580` |
 | `service.targetPort` | Port the server listens on inside the container                                | `5580`      |
+| `service.extraLabels`| Extra labels for the Service                                                   | `{}`        |
+| `service.annotations`| Annotations for the Service                                                    | `{}`        |
 
 ### HTTPRoute parameters
 
@@ -100,14 +112,16 @@ helm uninstall my-release
 | `httpRoute.parentRefs`      | Gateway API parentRefs pointing at your Gateway                         | `[]`  |
 | `httpRoute.host`            | Hostname to route to this service                                       | `""`  |
 | `httpRoute.path`            | Path prefix to match                                                    | `/`   |
-| `httpRoute.labels`          | Extra labels for the HTTPRoute                                          | `{}`  |
-| `httpRoute.extraAnnotations`| Extra annotations for the HTTPRoute                                     | `{}`  |
+| `httpRoute.extraLabels`     | Extra labels for the HTTPRoute                                          | `{}`  |
+| `httpRoute.annotations`     | Annotations for the HTTPRoute                                           | `{}`  |
 
 ### Scheduling parameters
 
-| Name           | Description                    | Value |
-|----------------|--------------------------------|-------|
-| `nodeSelector` | Node labels for pod assignment | `{}`  |
+| Name           | Description                     | Value |
+|----------------|----------------------------------|-------|
+| `nodeSelector` | Node labels for pod assignment  | `{}`  |
+| `tolerations`  | Tolerations for pod assignment  | `[]`  |
+| `affinity`     | Affinity rules for pod assignment | `{}` |
 
 ### Resource parameters
 

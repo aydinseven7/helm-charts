@@ -49,6 +49,17 @@ annotations:
 ##
 replicaCount: 1
 
+## @section Deployment metadata parameters
+##
+
+## @param deployment.extraLabels Extra labels for the Deployment resource itself
+## @param deployment.annotations Annotations for the Deployment resource itself
+## (distinct from the pod-level `annotations` above, which land on the pod template)
+##
+deployment:
+  extraLabels: {}
+  annotations: {}
+
 ## @section Network parameters
 ##
 
@@ -65,15 +76,23 @@ dnsPolicy: ClusterFirstWithHostNet
 ##
 
 ## @param persistence.enabled Enable a PersistentVolumeClaim for Matter commissioning data
+## @param persistence.existingClaim Use an existing PersistentVolumeClaim instead of creating one
+## When set, the chart does not create a PVC and the Deployment mounts this claim directly;
+## the other persistence.* fields (storageClass, accessMode, size) are ignored.
 ## @param persistence.storageClass StorageClass for the data PVC ("" uses the cluster default)
 ## @param persistence.accessMode PVC access mode
 ## @param persistence.size Size of the data PVC
+## @param persistence.extraLabels Extra labels for the PersistentVolumeClaim
+## @param persistence.annotations Annotations for the PersistentVolumeClaim
 ##
 persistence:
   enabled: true
+  existingClaim: ""
   storageClass: "longhorn"
   accessMode: ReadWriteOnce
   size: 1Gi
+  extraLabels: {}
+  annotations: {}
 
 ## @section Service parameters
 ##
@@ -81,11 +100,15 @@ persistence:
 ## @param service.type Kubernetes Service type
 ## @param service.port Matter WebSocket API + built-in dashboard port (used by Home Assistant and for browser access)
 ## @param service.targetPort Port the server listens on inside the container
+## @param service.extraLabels Extra labels for the Service
+## @param service.annotations Annotations for the Service
 ##
 service:
   type: ClusterIP
   port: 5580
   targetPort: 5580
+  extraLabels: {}
+  annotations: {}
 
 ## @section HTTPRoute parameters
 ##
@@ -97,22 +120,32 @@ service:
 ## ref: https://gateway-api.sigs.k8s.io/api-types/httproute/
 ## @param httpRoute.host Hostname to route to this service
 ## @param httpRoute.path Path prefix to match
-## @param httpRoute.labels Extra labels for the HTTPRoute
-## @param httpRoute.extraAnnotations Extra annotations for the HTTPRoute
+## @param httpRoute.extraLabels Extra labels for the HTTPRoute
+## @param httpRoute.annotations Annotations for the HTTPRoute
 ##
 httpRoute:
   enabled: false
   parentRefs: []
   host: ""
   path: /
-  labels: {}
-  extraAnnotations: {}
+  extraLabels: {}
+  annotations: {}
 
 ## @section Scheduling parameters
 ##
 
 ## @param nodeSelector Node labels for pod assignment
 nodeSelector: {}
+
+## @param tolerations Tolerations for pod assignment
+## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+##
+tolerations: []
+
+## @param affinity Affinity rules for pod assignment
+## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+##
+affinity: {}
 
 ## @section Resource parameters
 ##
