@@ -2,6 +2,36 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "reviewers": ["aydinseven7"],
+  "regexManagers": [
+    {
+      "description": "ESPHome appVersion — values.yaml tag is empty and defaults to Chart.appVersion, so track appVersion directly against the image",
+      "fileMatch": ["^esphome/esphome-chart/Chart\\.ya?ml$"],
+      "matchStrings": ["appVersion:\\s*\"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "ghcr.io/esphome/esphome"
+    },
+    {
+      "description": "Dawarich appVersion — values.yaml tag is empty and defaults to Chart.appVersion, so track appVersion directly against the image",
+      "fileMatch": ["^dawarich/dawarich-helm-chart/Chart\\.ya?ml$"],
+      "matchStrings": ["appVersion:\\s*\"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "freikin/dawarich"
+    },
+    {
+      "description": "PostGIS appVersion — values.yaml has no tag key at all, image tag comes entirely from Chart.appVersion",
+      "fileMatch": ["^dawarich/postgis-helm-chart/Chart\\.ya?ml$"],
+      "matchStrings": ["appVersion:\\s*\"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "postgis/postgis"
+    },
+    {
+      "description": "python-matter-server appVersion — kept in sync with the values.yaml image tag",
+      "fileMatch": ["^python-matter-server/python-matter-server-chart/Chart\\.ya?ml$"],
+      "matchStrings": ["appVersion:\\s*\"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "ghcr.io/matter-js/matterjs-server"
+    }
+  ],
   "packageRules": [
     {
       "description": "Patch image updates in any chart → patch-bump the Chart version",
@@ -19,6 +49,26 @@
       "description": "Disable updates for non-semver image tags",
       "matchDepNames": ["ghcr.io/immich-app/postgres"],
       "enabled": false
+    },
+    {
+      "description": "Group ESPHome values.yaml tag + Chart.yaml appVersion into one PR",
+      "matchDepNames": ["ghcr.io/esphome/esphome"],
+      "groupName": "esphome"
+    },
+    {
+      "description": "Group Dawarich values.yaml tag + Chart.yaml appVersion into one PR",
+      "matchDepNames": ["freikin/dawarich"],
+      "groupName": "dawarich"
+    },
+    {
+      "description": "Group PostGIS values.yaml image + Chart.yaml appVersion into one PR",
+      "matchDepNames": ["postgis/postgis"],
+      "groupName": "postgis"
+    },
+    {
+      "description": "Group python-matter-server values.yaml tag + Chart.yaml appVersion into one PR",
+      "matchDepNames": ["ghcr.io/matter-js/matterjs-server"],
+      "groupName": "python-matter-server"
     }
   ]
 }
