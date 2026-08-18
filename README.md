@@ -43,6 +43,13 @@ Self-hosted Matter controller server, commonly paired with Home Assistant.
 |-------|-------------|
 | [`python-matter-server/python-matter-server-chart`](python-matter-server/python-matter-server-chart/) | Python Matter Server |
 
+### [paperless-gpt](paperless-gpt/)
+LLM-powered OCR/tagging assistant for paperless-ngx.
+
+| Chart | Description |
+|-------|-------------|
+| [`paperless-gpt/paperless-gpt-chart`](paperless-gpt/paperless-gpt-chart/) | paperless-gpt server |
+
 ## Usage
 
 All charts are packaged and published to the GitHub Container Registry as OCI artifacts. No Helm repo add step is needed — install directly with `helm install`:

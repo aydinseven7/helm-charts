@@ -18,9 +18,14 @@
       "depNameTemplate": "freikin/dawarich"
     },
     {
-      "description": "PostGIS appVersion — values.yaml has no tag key at all, image tag comes entirely from Chart.appVersion",
-      "fileMatch": ["^dawarich/postgis-helm-chart/Chart\\.ya?ml$"],
-      "matchStrings": ["appVersion:\\s*\"(?<currentValue>[^\"]+)\""],
+      "description": "PostGIS image tag — deployment.yaml builds it as {postgresql.version}-{postgis.version} (e.g. 17-3.5), not from appVersion, so combine both values.yaml fields into the real tag",
+      "fileMatch": ["^dawarich/postgis-helm-chart/values\\.ya?ml$"],
+      "matchStringsStrategy": "combination",
+      "matchStrings": [
+        "postgresql:\\s*\\n(?:\\s+.*\\n)*?\\s+version:\\s*\"(?<majorVersion>[^\"]+)\"",
+        "postgis:\\s*\\n(?:\\s+.*\\n)*?\\s+version:\\s*\"(?<minorVersion>[^\"]+)\""
+      ],
+      "currentValueTemplate": "{{{majorVersion}}}-{{{minorVersion}}}",
       "datasourceTemplate": "docker",
       "depNameTemplate": "postgis/postgis"
     },
