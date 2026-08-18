@@ -85,19 +85,24 @@ jobs:
             CHANGELOG="${CHART_DIR}/CHANGELOG.md"
 
             # Last tag released for *this* chart, to scope the changelog range.
+            # git-cliff only accepts a bare ref (no "..") if it's a real OID, so
+            # "HEAD" itself must be omitted rather than passed literally - that's
+            # what makes git-cliff walk the full history from HEAD.
             PREV_TAG=$(git tag -l "${NAME}/v*" | sort -V | tail -1)
-            RANGE="HEAD"
+            RANGE_ARGS=()
+            RANGE_DESC="full history"
             if [ -n "$PREV_TAG" ]; then
-              RANGE="${PREV_TAG}..HEAD"
+              RANGE_ARGS=("${PREV_TAG}..HEAD")
+              RANGE_DESC="${PREV_TAG}..HEAD"
             fi
 
-            echo "Generating changelog for $NAME ($RANGE, path ${CHART_DIR})"
+            echo "Generating changelog for $NAME ($RANGE_DESC, path ${CHART_DIR})"
             if [ -f "$CHANGELOG" ]; then
               git-cliff --config cliff.toml --include-path "${CHART_DIR}/**" \
-                --tag "v${VERSION}" --prepend "$CHANGELOG" "$RANGE"
+                --tag "v${VERSION}" --prepend "$CHANGELOG" "${RANGE_ARGS[@]}"
             else
               git-cliff --config cliff.toml --include-path "${CHART_DIR}/**" \
-                --tag "v${VERSION}" --output "$CHANGELOG" "$RANGE"
+                --tag "v${VERSION}" --output "$CHANGELOG" "${RANGE_ARGS[@]}"
             fi
 
             if ! git diff --quiet -- "$CHANGELOG"; then
