@@ -1,0 +1,252 @@
+## @section Image parameters
+##
+
+## paperless-gpt image
+## ref: https://github.com/icereed/paperless-gpt/pkgs/container/paperless-gpt
+## @param image.repository paperless-gpt image repository
+## @param image.tag paperless-gpt image tag ("" defaults to the chart's appVersion, see Chart.yaml)
+##
+image:
+  repository: icereed/paperless-gpt
+  tag: ""
+
+## @param replicaCount Number of replicas
+##
+replicaCount: 1
+
+## @section Secret parameters
+##
+
+## @param secretName Name of a pre-existing Secret exposed to the container via envFrom
+## Must contain PAPERLESS_API_TOKEN. Also add any LLM provider API keys your
+## configured providers need (e.g. OPENAI_API_KEY, ANTHROPIC_API_KEY,
+## MISTRAL_API_KEY, GOOGLEAI_API_KEY) — keys are passed through as env vars
+## with matching names, so name them exactly as paperless-gpt expects.
+## Not needed for OLLAMA_HOST-only setups beyond the Paperless token itself.
+## Create it before installing, e.g.:
+##   kubectl create secret generic paperless-gpt-secrets \
+##     --from-literal=PAPERLESS_API_TOKEN=xxxxx
+##
+secretName: ""
+
+## @section Paperless-ngx connection parameters
+##
+
+## @param paperless.baseUrl Base URL of the paperless-ngx instance (internal or external)
+## @param paperless.publicUrl Public URL used to generate links back to paperless-ngx ("" uses paperless.baseUrl)
+##
+paperless:
+  baseUrl: ""
+  publicUrl: ""
+
+## @section Tagging parameters
+##
+
+## @param tagging.manualTag Tag that triggers manual (review-before-apply) OCR/metadata suggestions
+## @param tagging.autoTag Tag that triggers fully automatic metadata tagging ("" disables)
+## @param tagging.autoOcrTag Tag that triggers fully automatic OCR ("" disables)
+## Stay on manualTag only until your test batch reject rate looks acceptable
+## before enabling either auto tag.
+##
+tagging:
+  manualTag: "paperless-gpt"
+  autoTag: ""
+  autoOcrTag: ""
+
+## @section LLM parameters (titles / tags / correspondents)
+##
+
+## @param llm.provider Text LLM provider (ollama, openai, anthropic, mistral, googleai)
+## @param llm.model Text LLM model name
+## @param llm.language Language paperless-gpt should respond in ("" uses the app default)
+##
+llm:
+  provider: ollama
+  model: ""
+  language: ""
+
+## @section Vision LLM / OCR parameters
+##
+
+## @param ocr.provider OCR backend (llm, azure, google_docai, docling)
+##
+ocr:
+  provider: llm
+
+## @param vision.provider Vision LLM provider used for OCR
+## @param vision.model Vision LLM model name
+## @param vision.temperature Vision LLM sampling temperature
+## @param vision.maxTokens Vision LLM max output tokens
+##
+vision:
+  provider: ollama
+  model: ""
+  temperature: "0.2"
+  maxTokens: "2500"
+
+## @section Ollama parameters
+##
+
+## @param ollama.host Ollama server URL ("" leaves OLLAMA_HOST unset)
+## @param ollama.contextLength Ollama context window size (sets NumCtx)
+##
+ollama:
+  host: ""
+  contextLength: "8192"
+
+## @param tokenLimit Max tokens of document content sent to the text LLM
+##
+tokenLimit: "3000"
+
+## @param imageMaxRenderDpi DPI used when rendering PDF pages to images for vision OCR
+##
+imageMaxRenderDpi: "250"
+
+## @section PDF safety parameters
+##
+
+## @param pdf.upload Allow paperless-gpt to upload OCR'd PDFs back to paperless-ngx
+## @param pdf.replace Allow paperless-gpt to replace the original PDF with the OCR'd version
+## Leave both false until you trust the OCR/tagging output on a test batch.
+##
+pdf:
+  upload: false
+  replace: false
+
+## @param logLevel Log verbosity (debug, info, warn, error)
+##
+logLevel: "info"
+
+## @section Persistence parameters
+##
+
+## @param persistence.enabled Enable a PersistentVolumeClaim for /app/prompts
+## paperless-gpt saves prompt edits made through its UI back to this
+## directory at runtime, so it must be writable and persistent.
+## @param persistence.existingClaim Use an existing PersistentVolumeClaim instead of creating one
+## When set, the chart does not create a PVC and the Deployment mounts this claim directly;
+## the other persistence.* fields (storageClass, accessMode, size) are ignored.
+## @param persistence.storageClass StorageClass for the prompts PVC ("" uses the cluster default)
+## @param persistence.accessMode PVC access mode
+## @param persistence.size Size of the prompts PVC
+## @param persistence.extraLabels Extra labels for the PersistentVolumeClaim
+## @param persistence.annotations Annotations for the PersistentVolumeClaim
+##
+persistence:
+  enabled: true
+  existingClaim: ""
+  storageClass: "longhorn"
+  accessMode: ReadWriteOnce
+  size: 100Mi
+  extraLabels: {}
+  annotations: {}
+
+## @section Service parameters
+##
+
+## @param service.type Kubernetes Service type
+## @param service.port Service port
+## @param service.targetPort Port paperless-gpt listens on inside the container
+## @param service.extraLabels Extra labels for the Service
+## @param service.annotations Annotations for the Service
+##
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+  extraLabels: {}
+  annotations: {}
+
+## @section Ingress parameters
+##
+
+## @param ingress.enabled Enable a classic networking.k8s.io Ingress resource
+## @param ingress.className IngressClass to use
+## @param ingress.annotations Additional annotations for the Ingress resource
+## @param ingress.hosts Ingress host/path rules
+## @param ingress.tls TLS configuration for the Ingress resource
+##
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: paperless-gpt.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: paperless-gpt-tls
+  #    hosts:
+  #      - paperless-gpt.example.com
+
+## @section HTTPRoute parameters
+##
+
+## @param httpRoute.enabled Create a Gateway API HTTPRoute instead of a classic Ingress
+## Requires a Gateway API implementation with an existing Gateway resource.
+## @param httpRoute.parentRefs Gateway API parentRefs pointing at your Gateway
+## ref: https://gateway-api.sigs.k8s.io/api-types/httproute/
+## @param httpRoute.hostnames Hostnames to route to this service
+## @param httpRoute.annotations Annotations for the HTTPRoute
+## @param httpRoute.rules Gateway API match/filter rules
+##
+httpRoute:
+  enabled: false
+  parentRefs: []
+  #  - name: my-gateway
+  #    namespace: gateway-system
+  #    sectionName: https
+  hostnames:
+    - paperless-gpt.example.com
+  annotations: {}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters: []
+      #  - type: RequestHeaderModifier
+      #    requestHeaderModifier:
+      #      add:
+      #        - name: X-Forwarded-Proto
+      #          value: https
+
+## @section Scheduling parameters
+##
+
+## @param nodeSelector Node labels for pod assignment
+##
+nodeSelector: {}
+
+## @param tolerations Tolerations for pod assignment
+##
+tolerations: []
+
+## @param affinity Affinity rules for pod assignment
+##
+affinity: {}
+
+## @section Resource parameters
+##
+
+## @param resources Resource requests and limits for the paperless-gpt container
+## ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+## e.g.:
+##   resources:
+##     limits:
+##       cpu: "1"
+##       memory: 512Mi
+##     requests:
+##       cpu: 50m
+##       memory: 128Mi
+##
+resources: {}
+
+## @param extraEnv Extra environment variables appended to the container as-is
+## e.g.:
+##   extraEnv:
+##     - name: REMOVE_FROM_CONTENT
+##       value: "some text"
+##
+extraEnv: []

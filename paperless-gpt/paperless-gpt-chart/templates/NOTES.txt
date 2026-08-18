@@ -1,0 +1,29 @@
+paperless-gpt has been deployed as release {{ .Release.Name }} in namespace {{ .Release.Namespace }}.
+
+{{- if .Values.ingress.enabled }}
+It should become reachable at:
+{{- range .Values.ingress.hosts }}
+  http://{{ .host }}
+{{- end }}
+{{- else if .Values.httpRoute.enabled }}
+It should become reachable at:
+{{- range .Values.httpRoute.hostnames }}
+  http://{{ . }}
+{{- end }}
+{{- else }}
+No Ingress/HTTPRoute was enabled. To reach it for now, port-forward:
+
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "paperless-gpt.fullname" . }}-svc 8080:{{ .Values.service.port }}
+
+then open http://localhost:8080
+{{- end }}
+
+{{- if not .Values.secretName }}
+
+WARNING: secretName is not set. paperless-gpt needs PAPERLESS_API_TOKEN (and
+any LLM provider API keys you use) supplied via a pre-existing Secret. Create
+one and set secretName in values.yaml, e.g.:
+
+  kubectl -n {{ .Release.Namespace }} create secret generic paperless-gpt-secrets \
+    --from-literal=PAPERLESS_API_TOKEN=xxxxx
+{{- end }}

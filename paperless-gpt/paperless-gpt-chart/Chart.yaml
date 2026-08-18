@@ -1,0 +1,14 @@
+apiVersion: v2
+name: paperless-gpt
+version: 0.1.0
+appVersion: "v0.27.0"
+description: A Helm chart for deploying paperless-gpt, an LLM-powered OCR/tagging assistant for paperless-ngx
+keywords:
+  - paperless-gpt
+  - paperless-ngx
+  - ocr
+  - llm
+  - document-management
+sources:
+  - https://github.com/icereed/paperless-gpt
+dependencies: []

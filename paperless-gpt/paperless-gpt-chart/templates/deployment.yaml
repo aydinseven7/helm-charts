@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "paperless-gpt.fullname" . }}
+  labels:
+    {{- include "paperless-gpt.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "paperless-gpt.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "paperless-gpt.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: paperless-gpt
+          image: "{{ .Values.image.repository }}:{{ include "paperless-gpt.imageTag" . }}"
+          {{- if .Values.secretName }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.secretName }}
+          {{- end }}
+          env:
+            # --- Paperless-ngx connection ---
+            - name: PAPERLESS_BASE_URL
+              value: {{ .Values.paperless.baseUrl | quote }}
+            {{- if .Values.paperless.publicUrl }}
+            - name: PAPERLESS_PUBLIC_URL
+              value: {{ .Values.paperless.publicUrl | quote }}
+            {{- end }}
+
+            # --- Tagging / trigger mode ---
+            - name: MANUAL_TAG
+              value: {{ .Values.tagging.manualTag | quote }}
+            {{- if .Values.tagging.autoTag }}
+            - name: AUTO_TAG
+              value: {{ .Values.tagging.autoTag | quote }}
+            {{- end }}
+            {{- if .Values.tagging.autoOcrTag }}
+            - name: AUTO_OCR_TAG
+              value: {{ .Values.tagging.autoOcrTag | quote }}
+            {{- end }}
+
+            # --- Text LLM (titles/tags/correspondents) ---
+            - name: LLM_PROVIDER
+              value: {{ .Values.llm.provider | quote }}
+            - name: LLM_MODEL
+              value: {{ .Values.llm.model | quote }}
+            {{- if .Values.llm.language }}
+            - name: LLM_LANGUAGE
+              value: {{ .Values.llm.language | quote }}
+            {{- end }}
+
+            # --- Vision LLM (OCR) ---
+            - name: OCR_PROVIDER
+              value: {{ .Values.ocr.provider | quote }}
+            - name: VISION_LLM_PROVIDER
+              value: {{ .Values.vision.provider | quote }}
+            - name: VISION_LLM_MODEL
+              value: {{ .Values.vision.model | quote }}
+            - name: VISION_LLM_TEMPERATURE
+              value: {{ .Values.vision.temperature | quote }}
+            - name: VISION_LLM_MAX_TOKENS
+              value: {{ .Values.vision.maxTokens | quote }}
+
+            {{- if .Values.ollama.host }}
+            - name: OLLAMA_HOST
+              value: {{ .Values.ollama.host | quote }}
+            {{- end }}
+            - name: OLLAMA_CONTEXT_LENGTH
+              value: {{ .Values.ollama.contextLength | quote }}
+            - name: TOKEN_LIMIT
+              value: {{ .Values.tokenLimit | quote }}
+
+            # --- Image rendering ---
+            - name: IMAGE_MAX_RENDER_DPI
+              value: {{ .Values.imageMaxRenderDpi | quote }}
+
+            # --- Safety: leave off until you trust the output ---
+            - name: PDF_UPLOAD
+              value: {{ .Values.pdf.upload | quote }}
+            - name: PDF_REPLACE
+              value: {{ .Values.pdf.replace | quote }}
+
+            - name: LOG_LEVEL
+              value: {{ .Values.logLevel | quote }}
+          {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+          volumeMounts:
+            - name: prompts
+              mountPath: /app/prompts
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: prompts
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim | default (printf "%s-prompts" (include "paperless-gpt.fullname" .)) }}
