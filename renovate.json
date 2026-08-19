@@ -2,36 +2,37 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "reviewers": ["aydinseven7"],
-  "regexManagers": [
+  "customManagers": [
     {
+      "customType": "regex",
       "description": "ESPHome appVersion — values.yaml tag is empty and defaults to Chart.appVersion, so track appVersion directly against the image",
-      "fileMatch": ["^esphome/esphome-chart/Chart\\.ya?ml$"],
+      "managerFilePatterns": ["/^esphome/esphome-chart/Chart\\.ya?ml$/"],
       "matchStrings": ["appVersion:\\s*\"(?<currentValue>[^\"]+)\""],
       "datasourceTemplate": "docker",
       "depNameTemplate": "ghcr.io/esphome/esphome"
     },
     {
+      "customType": "regex",
       "description": "Dawarich appVersion — values.yaml tag is empty and defaults to Chart.appVersion, so track appVersion directly against the image",
-      "fileMatch": ["^dawarich/dawarich-helm-chart/Chart\\.ya?ml$"],
+      "managerFilePatterns": ["/^dawarich/dawarich-helm-chart/Chart\\.ya?ml$/"],
       "matchStrings": ["appVersion:\\s*\"(?<currentValue>[^\"]+)\""],
       "datasourceTemplate": "docker",
       "depNameTemplate": "freikin/dawarich"
     },
     {
+      "customType": "regex",
       "description": "PostGIS image tag — deployment.yaml builds it as {postgresql.version}-{postgis.version} (e.g. 17-3.5), not from appVersion, so combine both values.yaml fields into the real tag",
-      "fileMatch": ["^dawarich/postgis-helm-chart/values\\.ya?ml$"],
+      "managerFilePatterns": ["/^dawarich/postgis-helm-chart/values\\.ya?ml$/"],
       "matchStringsStrategy": "combination",
-      "matchStrings": [
-        "postgresql:\\s*\\n(?:\\s+.*\\n)*?\\s+version:\\s*\"(?<majorVersion>[^\"]+)\"",
-        "postgis:\\s*\\n(?:\\s+.*\\n)*?\\s+version:\\s*\"(?<minorVersion>[^\"]+)\""
-      ],
+      "matchStrings": ["postgresql:\\s*\\n(?:\\s+.*\\n)*?\\s+version:\\s*\"(?<majorVersion>[^\"]+)\"", "postgis:\\s*\\n(?:\\s+.*\\n)*?\\s+version:\\s*\"(?<minorVersion>[^\"]+)\""],
       "currentValueTemplate": "{{{majorVersion}}}-{{{minorVersion}}}",
       "datasourceTemplate": "docker",
       "depNameTemplate": "postgis/postgis"
     },
     {
+      "customType": "regex",
       "description": "python-matter-server appVersion — kept in sync with the values.yaml image tag",
-      "fileMatch": ["^python-matter-server/python-matter-server-chart/Chart\\.ya?ml$"],
+      "managerFilePatterns": ["/^python-matter-server/python-matter-server-chart/Chart\\.ya?ml$/"],
       "matchStrings": ["appVersion:\\s*\"(?<currentValue>[^\"]+)\""],
       "datasourceTemplate": "docker",
       "depNameTemplate": "ghcr.io/matter-js/matterjs-server"
