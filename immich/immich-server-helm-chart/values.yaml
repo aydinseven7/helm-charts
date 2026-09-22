@@ -149,7 +149,7 @@ machineLearning:
   ##
   image:
     repository: ghcr.io/immich-app/immich-machine-learning
-    tag: "v3.0.3"
+    tag: "v3.2.2"
 
   ## Extra environment variables for the ML container
   ## Provide as a map of key/value pairs.
