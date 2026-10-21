@@ -8,7 +8,7 @@ A Helm chart for deploying [paperless-gpt](https://github.com/icereed/paperless-
 kubectl create secret generic paperless-gpt-secrets \
   --from-literal=PAPERLESS_API_TOKEN=<your-paperless-ngx-api-token>
 
-helm install my-release ./paperless-gpt-chart \
+helm install my-release ./paperless-gpt \
   --set secretName=paperless-gpt-secrets \
   --set paperless.baseUrl=https://paperless.example.com
 ```
@@ -45,7 +45,7 @@ Then point the chart at it via `secretName`.
 To install the chart with the release name `my-release`:
 
 ```bash
-helm install my-release ./paperless-gpt-chart
+helm install my-release ./paperless-gpt
 ```
 
 ## Uninstalling the Chart
