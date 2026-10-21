@@ -5,21 +5,20 @@ Yes, there are some issues such as using Deployments instead of StatefulSets for
 ## Charts
 
 ### [Dawarich](dawarich/)
-Self-hosted location history tracker. Includes a custom chart for the Dawarich Rails app (+ Sidekiq worker) and a custom PostGIS chart, plus a values override for the Bitnami Redis chart.
+Self-hosted location history tracker. Includes a custom chart for the Dawarich Rails app (+ Sidekiq worker) with a bundled CloudNativePG PostGIS cluster and Valkey.
 
 | Chart | Description |
 |-------|-------------|
-| [`dawarich/dawarich-helm-chart`](dawarich/dawarich-helm-chart/) | Dawarich server + Sidekiq background worker |
-| [`dawarich/postgis-helm-chart`](dawarich/postgis-helm-chart/) | PostgreSQL 17 with PostGIS 3.5 |
-| [`dawarich/redis-values.yaml`](dawarich/redis-values.yaml) | Values override for Bitnami Redis |
+| [`dawarich/dawarich-helm-chart`](dawarich/dawarich-helm-chart/) | Dawarich server + Sidekiq background worker, with a CNPG PostGIS cluster and Valkey |
+| [`dawarich/postgis-helm-chart`](dawarich/postgis-helm-chart/) | Legacy plain PostgreSQL 17 + PostGIS Deployment (superseded by the bundled CNPG cluster) |
 
 ### [Immich](immich/)
-Self-hosted photo and video management. Includes a custom chart for the Immich server (with optional ML sidecar), a custom chart for the Immich-patched PostgreSQL database, and a standalone ML helper chart for offloading inference to a separate node.
+Self-hosted photo and video management. Includes a custom chart for the Immich server (with optional ML sidecar, Valkey, and a bundled CloudNativePG cluster on the Immich-patched PostgreSQL image), a legacy chart for a plain PostgreSQL Deployment, and a standalone ML helper chart for offloading inference to a separate node.
 
 | Chart | Description |
 |-------|-------------|
-| [`immich/immich-server-helm-chart`](immich/immich-server-helm-chart/) | Immich server + optional ML sidecar |
-| [`immich/database-helm-chart`](immich/database-helm-chart/) | PostgreSQL 14 with pgvecto.rs + VectorChord |
+| [`immich/immich-server-helm-chart`](immich/immich-server-helm-chart/) | Immich server + optional ML sidecar, with a CNPG PostgreSQL cluster and Valkey |
+| [`immich/database-helm-chart`](immich/database-helm-chart/) | Legacy plain PostgreSQL 14 Deployment (superseded by the bundled CNPG cluster) |
 | [`immich/immich-ml-helper-chart`](immich/immich-ml-helper-chart/) | Standalone ML pod for separate node/cluster deployments |
 
 ### [AirTrail](airtrail/)
