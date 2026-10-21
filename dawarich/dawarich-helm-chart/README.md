@@ -6,9 +6,7 @@
 
 ```bash
 helm install dawarich ./dawarich-helm-chart \
-  --set ingress.host=dawarich.example.com \
-  --set database.existingSecret.name=dawarich-postgres-secret \
-  --set redis.host=redis://redis-master:6379
+  --set ingress.host=dawarich.example.com
 ```
 
 ## Introduction
@@ -22,13 +20,13 @@ The deployment runs two containers in a single Pod:
 
 Both containers share the same PersistentVolumes for uploads, watched imports, and public assets.
 
+By default the chart also deploys a PostGIS-enabled [CloudNativePG](https://cloudnative-pg.io) `Cluster` through the [cloudnative-pg `cluster` chart](https://github.com/cloudnative-pg/charts/tree/main/charts/cluster), pulled in as a dependency under the `cnpg` key, and a [Valkey](https://valkey.io) instance (Redis-compatible, used for the Sidekiq queue and cache) through the official [valkey chart](https://github.com/valkey-io/valkey-helm) under the `valkey` key. Dawarich connects to both automatically (see [Database](#database) and [Valkey](#valkey)).
+
 ## Prerequisites
 
 - Kubernetes 1.23+
 - Helm 3.8+
-- A running PostgreSQL instance with the PostGIS extension (see the companion `postgis` chart)
-- A running Redis instance (e.g. Bitnami Redis chart)
-- A Kubernetes secret containing the database password (see [Database credentials](#database-credentials))
+- The [CloudNativePG operator](https://cloudnative-pg.io/documentation/current/installation_upgrade/) installed in the cluster (or `cnpg.enabled: false` and an existing PostgreSQL with PostGIS)
 
 ## Installing the Chart
 
@@ -126,20 +124,53 @@ Note: PersistentVolumeClaims are **not** deleted automatically. Remove them manu
 
 ### Database parameters
 
-| Name                           | Description                                              | Value                      |
-|--------------------------------|----------------------------------------------------------|----------------------------|
-| `database.host`                | PostgreSQL host                                          | `postgis`                  |
-| `database.username`            | PostgreSQL username                                      | `postgres`                 |
-| `database.name`                | PostgreSQL database name                                 | `dawarich`                 |
-| `database.password`            | Database password (ignored when `existingSecret` is set) | `""`                       |
-| `database.existingSecret.name` | Name of the secret containing the database password      | `dawarich-postgres-secret` |
-| `database.existingSecret.key`  | Key within the secret for the password                   | `password`                 |
+| Name                           | Description                                                                         | Value      |
+|--------------------------------|-------------------------------------------------------------------------------------|------------|
+| `database.host`                | PostgreSQL host. Defaults to `<cluster>-rw` when `cnpg.enabled`                     | `""`       |
+| `database.username`            | PostgreSQL username. Ignored when credentials come from the CNPG app secret         | `""`       |
+| `database.name`                | PostgreSQL database name. Keep in sync with `cnpg.cluster.initdb.database`          | `dawarich` |
+| `database.password`            | Database password (ignored when `existingSecret` or the CNPG app secret is used)    | `""`       |
+| `database.existingSecret.name` | Secret containing the database password. When empty and `cnpg.enabled`, the CNPG app secret is used | `""`       |
+| `database.existingSecret.key`  | Key within the secret for the password                                              | `password` |
+
+### CloudNativePG parameters
+
+Everything under `cnpg` except `enabled` is passed to the [cloudnative-pg `cluster` chart](https://github.com/cloudnative-pg/charts/blob/main/charts/cluster/values.yaml); any of its values can be set here. The defaults this chart sets:
+
+| Name                               | Description                                                   | Value                                                  |
+|------------------------------------|---------------------------------------------------------------|--------------------------------------------------------|
+| `cnpg.enabled`                     | Deploy the CNPG Cluster                                       | `true`                                                 |
+| `cnpg.fullnameOverride`            | Cluster name. Defaults to `<release>-cnpg`                    | `""`                                                   |
+| `cnpg.type`                        | Database type (`postgis` creates the PostGIS extensions)      | `postgis`                                              |
+| `cnpg.version.postgresql`          | PostgreSQL major version                                      | `17`                                                   |
+| `cnpg.version.postgis`             | PostGIS version                                               | `3.6`                                                  |
+| `cnpg.cluster.instances`           | Number of PostgreSQL instances                                | `1`                                                    |
+| `cnpg.cluster.imageName`           | PostGIS image used by the operator                            | `ghcr.io/cloudnative-pg/postgis:17-3.6-system-trixie`  |
+| `cnpg.cluster.storage.size`        | PVC size                                                      | `5Gi`                                                  |
+| `cnpg.cluster.storage.storageClass`| Storage class (empty uses the cluster default)                | `""`                                                   |
+| `cnpg.cluster.resources`           | Resource requests and limits for the PostgreSQL pods          | `{}`                                                   |
+| `cnpg.cluster.initdb.database`     | Database created on first bootstrap                           | `dawarich`                                             |
+| `cnpg.cluster.initdb.owner`        | Owner role of that database                                   | `dawarich`                                             |
+| `cnpg.cluster.initdb.secret.name`  | Existing basic-auth secret to seed the owner's credentials    | unset (CNPG generates `<cluster>-app`)                 |
+| `cnpg.backups.enabled`             | Enable barman-cloud backups                                   | `false`                                                |
 
 ### Redis parameters
 
-| Name         | Description          | Value                       |
-|--------------|----------------------|-----------------------------|
-| `redis.host` | Redis connection URL | `redis://redis-master:6379` |
+| Name         | Description                                                                     | Value |
+|--------------|---------------------------------------------------------------------------------|-------|
+| `redis.host` | Redis connection URL. Defaults to `redis://<release>-valkey:6379` when `valkey.enabled` | `""`  |
+
+### Valkey parameters
+
+Everything under `valkey` except `enabled` is passed to the [valkey chart](https://github.com/valkey-io/valkey-helm/blob/main/valkey/values.yaml); any of its values can be set here. The defaults this chart sets:
+
+| Name                         | Description                                      | Value   |
+|------------------------------|--------------------------------------------------|---------|
+| `valkey.enabled`             | Deploy Valkey                                    | `true`  |
+| `valkey.fullnameOverride`    | Service/workload name. Defaults to `<release>-valkey` | `""` |
+| `valkey.auth.enabled`        | Require authentication                           | `false` |
+| `valkey.dataStorage.enabled` | Persist data to a PVC                            | `false` |
+| `valkey.resources`           | Resource requests and limits for the Valkey pod  | `{}`    |
 
 ### Resource parameters
 
@@ -229,26 +260,59 @@ httpRoute:
           port: 8080
 ```
 
-### Database credentials
+### Database
 
-The chart reads the database password from a Kubernetes Secret rather than storing it in plain text. Create the secret before installing the chart:
+With `cnpg.enabled: true` (the default) nothing needs to be created up front. CNPG bootstraps the `dawarich` database with the PostGIS extensions, and the chart points Dawarich at the Cluster's read-write Service (`<cluster>-rw`) with the username and password from its app secret (`<cluster>-app`).
+
+To choose the owner's password yourself, create a `kubernetes.io/basic-auth` secret and hand it to CNPG; Dawarich then reads its credentials from that secret instead:
 
 ```bash
 kubectl create secret generic dawarich-postgres-secret \
+  --type=kubernetes.io/basic-auth \
+  --from-literal=username=dawarich \
   --from-literal=password=my-db-password \
   --namespace dawarich
 ```
 
-Then reference it in your values:
+```yaml
+cnpg:
+  cluster:
+    initdb:
+      secret:
+        name: dawarich-postgres-secret
+```
+
+Backups, recovery/import from an existing database, monitoring and any other Cluster settings are configured under `cnpg` with the cluster chart's own values. For example, to migrate from an existing PostGIS instance, set `cnpg.mode: recovery` with `cnpg.recovery.method: import`.
+
+#### Using an external database
+
+Set `cnpg.enabled: false` and point the chart at your own PostgreSQL with PostGIS. The password is read from a Kubernetes Secret:
 
 ```yaml
+cnpg:
+  enabled: false
 database:
+  host: postgis
+  username: dawarich
   existingSecret:
     name: dawarich-postgres-secret
     key: password
 ```
 
 If you do not use an existing secret, you can set `database.password` directly — though this is not recommended for production.
+
+### Valkey
+
+With `valkey.enabled: true` (the default) the chart deploys a single Valkey instance without authentication or persistence and sets `REDIS_URL` to `redis://<release>-valkey:6379`. Queued Sidekiq jobs do not survive a Valkey restart; enable `valkey.dataStorage` if that matters to you.
+
+To use an existing Redis or Valkey instead:
+
+```yaml
+valkey:
+  enabled: false
+redis:
+  host: "redis://my-valkey:6379"
+```
 
 ### SMTP / email configuration
 

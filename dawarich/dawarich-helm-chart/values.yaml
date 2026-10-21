@@ -131,26 +131,99 @@ smtp:
     key: "smtp-password"
 
 ## Database parameters
+## With cnpg.enabled (the default), host and credentials default to the bundled
+## CloudNativePG Cluster: host "<cluster>-rw", username/password from the
+## Cluster's app secret. Set them only to connect to a different PostgreSQL.
 database:
-  ## Reference to an existing secret containing the database password
+  ## Reference to an existing secret containing the database password.
+  ## When empty and cnpg.enabled, the CNPG app secret is used for both the
+  ## username and password.
   existingSecret:
     ## Name of the existing secret
-    name: "dawarich-postgres-secret"
+    name: ""
     ## Key within the secret for the database password
     key: "password"
-  ## PostgreSQL host
-  host: "postgis"
-  ## PostgreSQL username
-  username: "postgres"
-  ## Database password (ignored if existingSecret.name is set)
+  ## PostgreSQL host. Defaults to "<cluster>-rw" when cnpg.enabled.
+  host: ""
+  ## PostgreSQL username. Ignored when the username comes from the CNPG app secret.
+  username: ""
+  ## Database password (ignored if existingSecret.name is set or the CNPG app secret is used)
   password: ""
-  ## Database name
+  ## Database name. Keep in sync with cnpg.cluster.initdb.database.
   name: "dawarich"
+
+## CloudNativePG parameters
+## Deploys a PostGIS-enabled CNPG Cluster through the cloudnative-pg "cluster"
+## chart, imported as a dependency under this key. Everything except `enabled`
+## is passed straight to that chart; see its values for all options:
+## https://github.com/cloudnative-pg/charts/blob/main/charts/cluster/values.yaml
+## Requires the CloudNativePG operator (and its CRDs) in the cluster.
+## Set enabled: false to use an external PostgreSQL/PostGIS via database.* instead.
+cnpg:
+  ## Deploy the CNPG Cluster
+  enabled: true
+  ## Cluster name. Defaults to "<release>-cnpg" when empty.
+  fullnameOverride: ""
+  ## Database type; postgis creates the PostGIS extensions on initdb
+  type: postgis
+  version:
+    postgresql: "17"
+    postgis: "3.6"
+  cluster:
+    ## Number of PostgreSQL instances
+    instances: 1
+    ## PostGIS image used by the operator
+    imageName: "ghcr.io/cloudnative-pg/postgis:17-3.6-system-trixie"
+    storage:
+      ## PVC size
+      size: 5Gi
+      ## Storage class name. Leave empty to use the cluster default storage class.
+      storageClass: ""
+    ## Resource requests and limits for the PostgreSQL pods
+    resources: {}
+    initdb:
+      ## Database created on first bootstrap
+      database: dawarich
+      ## Owner role of that database
+      owner: dawarich
+      ## Existing kubernetes.io/basic-auth Secret (username/password keys) to
+      ## seed the owner's credentials. When unset, CNPG generates "<cluster>-app".
+      ## e.g.:
+      ## secret:
+      ##   name: dawarich-postgres-secret
+  ## Backups via barman-cloud. See the cluster chart's values for configuration.
+  backups:
+    enabled: false
 
 ## Redis parameters
 redis:
-  ## Redis connection URL
-  host: "redis://redis-master:6379"
+  ## Redis connection URL. Defaults to the bundled Valkey Service
+  ## ("redis://<release>-valkey:6379") when valkey.enabled.
+  host: ""
+
+## Valkey parameters
+##
+## Deploys Valkey (a Redis-compatible store) through the official valkey chart,
+## imported as a dependency under this key. Everything except `enabled` is
+## passed straight to that chart; see its values for all options:
+## https://github.com/valkey-io/valkey-helm/blob/main/valkey/values.yaml
+## Set enabled: false to use an external Redis/Valkey via redis.host instead.
+##
+valkey:
+  ## Deploy Valkey
+  enabled: true
+  ## Service/workload name. Defaults to "<release>-valkey" when empty.
+  fullnameOverride: ""
+  auth:
+    ## Authentication is off; the Service is only reachable in-cluster.
+    ## If you enable it, connect with credentials via redis.host instead.
+    enabled: false
+  dataStorage:
+    ## Persist data to a PVC. Off by default: Valkey holds only queue/cache
+    ## state here.
+    enabled: false
+  ## Resource requests and limits for the Valkey pod
+  resources: {}
 
 ## Resource requests and limits. Defaults to {} (no limits).
 ## ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/

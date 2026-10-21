@@ -79,15 +79,7 @@ spec:
           {{- else }}
           value: {{ .Values.smtp.password | quote }}
           {{- end }}
-        - name: DATABASE_PASSWORD
-          {{- if .Values.database.existingSecret.name }}
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.database.existingSecret.name }}
-              key: {{ .Values.database.existingSecret.key }}
-          {{- else }}
-          value: {{ .Values.database.password | quote }}
-          {{- end }}
+        {{- include "dawarich.database.env" . | nindent 8 }}
         {{- if .Values.metrics.serviceMonitor.credentialsSecret }}
         - name: METRICS_USERNAME
           valueFrom:
@@ -152,15 +144,7 @@ spec:
           {{- else }}
           value: {{ .Values.smtp.password | quote }}
           {{- end }}
-        - name: DATABASE_PASSWORD
-          {{- if .Values.database.existingSecret.name }}
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Values.database.existingSecret.name }}
-              key: {{ .Values.database.existingSecret.key }}
-          {{- else }}
-          value: {{ .Values.database.password | quote }}
-          {{- end }}
+        {{- include "dawarich.database.env" . | nindent 8 }}
         envFrom:
         - configMapRef:
             name: {{ include "dawarich.fullname" . }}-config
