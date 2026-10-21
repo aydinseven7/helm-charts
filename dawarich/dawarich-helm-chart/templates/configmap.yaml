@@ -14,6 +14,11 @@ data:
   PROMETHEUS_EXPORTER_PORT: {{ .Values.env.PROMETHEUS_EXPORTER_PORT | quote }}
   SIDEKIQ_METRICS_URL: {{ .Values.env.SIDEKIQ_METRICS_URL | quote }}
   SELF_HOSTED: "true"
+  BACKGROUND_PROCESSING_CONCURRENCY: {{ .Values.env.BACKGROUND_PROCESSING_CONCURRENCY | quote }}
+  RAILS_MAX_THREADS: {{ .Values.env.RAILS_MAX_THREADS | default .Values.env.BACKGROUND_PROCESSING_CONCURRENCY | quote }}
+  {{- with .Values.env.REVERSE_GEOCODING_CONCURRENCY }}
+  REVERSE_GEOCODING_CONCURRENCY: {{ . | quote }}
+  {{- end }}
   STORE_GEODATA: {{ .Values.env.STORE_GEODATA | quote }}
   RAILS_ENV: {{ .Values.env.RAILS_ENV | quote }}
   RAILS_APPLICATION_CONFIG_HOSTS: {{ .Values.env.RAILS_APPLICATION_CONFIG_HOSTS | default .Values.ingress.host | quote }}
