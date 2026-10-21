@@ -1,12 +1,12 @@
 ## Image parameters
 
 ## Immich server image repository
-## Immich server image tag
+## Immich server image tag. Defaults to Chart.AppVersion when empty.
 ## Check https://github.com/immich-app/immich/releases for available tags.
 ##
 image:
   repository: ghcr.io/immich-app/immich-server
-  tag: "v3.2.2"
+  tag: ""
 
 ## External dependency parameters
 
@@ -231,11 +231,12 @@ machineLearning:
   enabled: true
 
   ## ML container image repository
-  ## ML container image tag
+  ## ML container image tag. Defaults to Chart.AppVersion when empty; keep it
+  ## on the same version as the server.
   ##
   image:
     repository: ghcr.io/immich-app/immich-machine-learning
-    tag: "v3.2.2"
+    tag: ""
 
   ## Extra environment variables for the ML container
   ## Provide as a map of key/value pairs.

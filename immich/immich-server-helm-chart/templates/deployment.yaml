@@ -28,7 +28,7 @@ spec:
       {{- end }}
       containers:
         - name: immich-server
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}
           env:
             - name: IMMICH_LOG_LEVEL
               value: {{ .Values.env.loglevel }}

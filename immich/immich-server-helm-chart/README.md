@@ -49,7 +49,7 @@ helm uninstall my-release
 | Name               | Description                    | Value                                  |
 |--------------------|--------------------------------|----------------------------------------|
 | `image.repository` | Immich server image repository | `ghcr.io/immich-app/immich-server`     |
-| `image.tag`        | Immich server image tag        | `v2.6.3`                               |
+| `image.tag`        | Immich server image tag (defaults to `appVersion`) | `""` |
 
 ### External dependency parameters
 
@@ -151,7 +151,7 @@ Everything under `cnpg` except `enabled` is passed to the [cloudnative-pg `clust
 |----------------------------------------------|---------------------------------------------------------------------|----------------------------------------------|
 | `machineLearning.enabled`                    | Deploy the Machine Learning sidecar                                 | `true`                                       |
 | `machineLearning.image.repository`           | ML container image repository                                       | `ghcr.io/immich-app/immich-machine-learning` |
-| `machineLearning.image.tag`                  | ML container image tag                                              | `v2.6.3`                                     |
+| `machineLearning.image.tag`                  | ML container image tag (defaults to `appVersion`)                   | `""`                                         |
 | `machineLearning.env`                        | Extra environment variables for the ML container                    | `{}`                                         |
 | `machineLearning.nodeSelector`               | Node labels for ML pod assignment                                   | `{}`                                         |
 | `machineLearning.affinity`                   | Affinity rules for ML pod scheduling                                | `{}`                                         |
