@@ -88,6 +88,12 @@ env:
   APPLICATION_HOSTS: dawarich.example.com
   ## Number of concurrent Sidekiq workers
   BACKGROUND_PROCESSING_CONCURRENCY: 10
+  ## ActiveRecord connection pool size; must be >= BACKGROUND_PROCESSING_CONCURRENCY.
+  ## Defaults to BACKGROUND_PROCESSING_CONCURRENCY when empty
+  RAILS_MAX_THREADS: ""
+  ## Max Sidekiq workers on the reverse_geocoding queue. Dawarich defaults to a third
+  ## of BACKGROUND_PROCESSING_CONCURRENCY when empty; raise it for a self-hosted Photon
+  REVERSE_GEOCODING_CONCURRENCY: ""
   ## Protocol the app is served over (http or https)
   APPLICATION_PROTOCOL: http
   ## Enable Prometheus metrics export

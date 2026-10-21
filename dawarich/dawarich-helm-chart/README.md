@@ -104,6 +104,8 @@ Note: PersistentVolumeClaims are **not** deleted automatically. Remove them manu
 | `env.RAILS_APPLICATION_CONFIG_HOSTS`    | Additional trusted hosts. Defaults to `ingress.host` when empty.     | `""`                   |
 | `env.APPLICATION_PROTOCOL`             | Protocol the app is served over (`http` or `https`)                  | `http`                 |
 | `env.BACKGROUND_PROCESSING_CONCURRENCY` | Number of concurrent Sidekiq workers                                 | `10`                   |
+| `env.RAILS_MAX_THREADS`                 | Database connection pool size. Defaults to `env.BACKGROUND_PROCESSING_CONCURRENCY` when empty. | `""`                   |
+| `env.REVERSE_GEOCODING_CONCURRENCY`     | Max workers on the reverse geocoding queue. Dawarich uses a third of `env.BACKGROUND_PROCESSING_CONCURRENCY` when empty. | `""`                   |
 | `env.STORE_GEODATA`                     | Persist downloaded reverse-geocoding data locally                    | `true`                 |
 | `env.timeZone`                          | Rails time zone string (e.g. `Europe/Berlin`)                        | `UTC`                  |
 | `env.PROMETHEUS_EXPORTER_ENABLED`       | Enable the Prometheus metrics endpoint on the web container          | `false`                |
