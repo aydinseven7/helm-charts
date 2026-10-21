@@ -22,6 +22,14 @@
     },
     {
       "customType": "regex",
+      "description": "Immich appVersion — server and ML image tags in values.yaml are empty and default to Chart.appVersion, so track appVersion directly against the server image",
+      "managerFilePatterns": ["/^immich/immich-server-helm-chart/Chart\\.ya?ml$/"],
+      "matchStrings": ["appVersion:\\s*\"(?<currentValue>[^\"]+)\""],
+      "datasourceTemplate": "docker",
+      "depNameTemplate": "ghcr.io/immich-app/immich-server"
+    },
+    {
+      "customType": "regex",
       "description": "PostGIS image tag — deployment.yaml builds it as {postgresql.version}-{postgis.version} (e.g. 17-3.5), not from appVersion, so combine both values.yaml fields into the real tag",
       "managerFilePatterns": ["/^dawarich/postgis-helm-chart/values\\.ya?ml$/"],
       "matchStringsStrategy": "combination",
@@ -61,6 +69,11 @@
       "description": "Group ESPHome values.yaml tag + Chart.yaml appVersion into one PR",
       "matchDepNames": ["ghcr.io/esphome/esphome"],
       "groupName": "esphome"
+    },
+    {
+      "description": "Group Immich server appVersion + ML helper image tag into one PR, so all Immich components move to the same release together",
+      "matchDepNames": ["ghcr.io/immich-app/immich-server", "ghcr.io/immich-app/immich-machine-learning"],
+      "groupName": "immich"
     },
     {
       "description": "Group Dawarich values.yaml tag + Chart.yaml appVersion into one PR",
