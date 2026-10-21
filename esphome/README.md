@@ -9,7 +9,7 @@ kubectl create secret generic esphome-dashboard-auth \
   --from-literal=USERNAME=admin \
   --from-literal=PASSWORD=changeme
 
-helm install my-release ./esphome-chart
+helm install my-release ./esphome
 ```
 
 ## Introduction
@@ -40,7 +40,7 @@ kubectl create secret generic esphome-dashboard-auth \
 To install the chart with the release name `my-release`:
 
 ```bash
-helm install my-release ./esphome-chart
+helm install my-release ./esphome
 ```
 
 ## Uninstalling the Chart

@@ -34,7 +34,7 @@ Self-hosted dashboard for building and flashing ESPHome firmware, commonly paire
 
 | Chart | Description |
 |-------|-------------|
-| [`esphome/esphome-chart`](esphome/esphome-chart/) | ESPHome dashboard |
+| [`esphome`](esphome/) | ESPHome dashboard |
 
 ### [Python Matter Server](python-matter-server/)
 Self-hosted Matter controller server, commonly paired with Home Assistant.
@@ -48,7 +48,7 @@ LLM-powered OCR/tagging assistant for paperless-ngx.
 
 | Chart | Description |
 |-------|-------------|
-| [`paperless-gpt/paperless-gpt-chart`](paperless-gpt/paperless-gpt-chart/) | paperless-gpt server |
+| [`paperless-gpt`](paperless-gpt/) | paperless-gpt server |
 
 ## Usage
 
