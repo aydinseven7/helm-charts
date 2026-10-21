@@ -11,27 +11,33 @@ image:
 ## External dependency parameters
 
 ## Kubernetes DNS name of the PostgreSQL Service
-## Must match the Service name of your PostgreSQL deployment in the same namespace.
-## If you used the companion database chart with release name "immich", the
-## Service will be named "immich-db".
+## Defaults to the bundled CNPG Cluster's read-write Service ("<cluster>-rw")
+## when cnpg.enabled. Set it only to connect to a different PostgreSQL, e.g.
+## "immich-db" for the companion database chart.
 ##
-databaseHost: "immich-db"
+databaseHost: ""
 
 ## Kubernetes DNS name of the Redis Service
-## If you installed Redis via the Bitnami chart, the default Service name is "redis-master".
+## Defaults to the bundled Valkey Service ("<release>-valkey") when
+## valkey.enabled. Set it only to connect to a different Redis/Valkey.
+## Avoid a Service literally named "redis": Kubernetes then injects a
+## REDIS_PORT env var (tcp://...) that clashes with Immich's own REDIS_PORT.
 ##
-redisHost: "redis-master"
+redisHost: ""
 
 ## Name of the PostgreSQL database Immich should connect to
+## Keep in sync with cnpg.cluster.initdb.database.
 ##
 databaseName: immich
 
 ## PostgreSQL credential parameters
 ##
-## Credentials are read from a pre-existing Kubernetes Secret so that
-## plaintext passwords never appear in values files or Helm releases.
+## Credentials are read from a Kubernetes Secret so that plaintext passwords
+## never appear in values files or Helm releases.
 ##
-## Create the Secret before installing this chart:
+## With cnpg.enabled and secretName left empty, the CNPG Cluster's app secret
+## is used ("<cluster>-app", or cnpg.cluster.initdb.secret.name when set).
+## Otherwise create the Secret before installing this chart:
 ##   kubectl create secret generic postgres-secret \
 ##     --from-literal=username=immich \
 ##     --from-literal=password=changeme
@@ -41,15 +47,95 @@ databaseName: immich
 ## Key within the Secret that holds the username value
 ##
 postgresUser:
-  secretName: postgres-secret
+  secretName: ""
   key: username
 
 ## Name of the Secret containing the PostgreSQL password
 ## Key within the Secret that holds the password value
 ##
 postgresPassword:
-  secretName: postgres-secret
+  secretName: ""
   key: password
+
+## Valkey parameters
+##
+## Deploys Valkey (a Redis-compatible store) through the official valkey chart,
+## imported as a dependency under this key. Everything except `enabled` is
+## passed straight to that chart; see its values for all options:
+## https://github.com/valkey-io/valkey-helm/blob/main/valkey/values.yaml
+## Set enabled: false to use an external Redis/Valkey via redisHost instead.
+##
+valkey:
+  ## Deploy Valkey
+  enabled: true
+  ## Service/workload name. Defaults to "<release>-valkey" when empty.
+  fullnameOverride: ""
+  auth:
+    ## Authentication is off; the Service is only reachable in-cluster.
+    ## If you enable it, connect with credentials via redisHost instead.
+    enabled: false
+  dataStorage:
+    ## Persist data to a PVC. Off by default: Valkey holds only queue/cache
+    ## state here.
+    enabled: false
+  ## Resource requests and limits for the Valkey pod
+  resources: {}
+
+## CloudNativePG parameters
+##
+## Deploys a CNPG Cluster on the Immich-patched PostgreSQL image (VectorChord +
+## pgvector) through the cloudnative-pg "cluster" chart, imported as a
+## dependency under this key. Everything except `enabled` is passed straight
+## to that chart; see its values for all options:
+## https://github.com/cloudnative-pg/charts/blob/main/charts/cluster/values.yaml
+## Requires the CloudNativePG operator (and its CRDs) in the cluster.
+## Set enabled: false to use an external PostgreSQL via databaseHost instead.
+##
+cnpg:
+  ## Deploy the CNPG Cluster
+  enabled: true
+  ## Cluster name. Defaults to "<release>-cnpg" when empty.
+  fullnameOverride: ""
+  type: postgresql
+  version:
+    postgresql: "18"
+  cluster:
+    ## Number of PostgreSQL instances
+    instances: 1
+    ## Immich-patched PostgreSQL image. Check https://github.com/immich-app/postgres
+    ## for available tags; the major version must match version.postgresql.
+    imageName: "ghcr.io/immich-app/postgres:18-vectorchord1.1.1-pgvector0.8.5"
+    ## The image runs postgres as UID/GID 999 (docker-library convention),
+    ## not CNPG's default of 26; initdb fails without this.
+    postgresUID: 999
+    postgresGID: 999
+    storage:
+      ## PVC size
+      size: 10Gi
+      ## Storage class name. Leave empty to use the cluster default storage class.
+      storageClass: ""
+    postgresql:
+      shared_preload_libraries:
+        - vchord.so
+    ## Resource requests and limits for the PostgreSQL pods
+    resources: {}
+    initdb:
+      ## Database created on first bootstrap
+      database: immich
+      ## Owner role of that database
+      owner: immich
+      ## The owner is not a superuser, so Immich cannot create these itself on startup
+      postInitApplicationSQL:
+        - CREATE EXTENSION IF NOT EXISTS vchord CASCADE;
+        - CREATE EXTENSION IF NOT EXISTS earthdistance CASCADE;
+      ## Existing kubernetes.io/basic-auth Secret (username/password keys) to
+      ## seed the owner's credentials. When unset, CNPG generates "<cluster>-app".
+      ## e.g.:
+      ## secret:
+      ##   name: immich-postgresql-secret
+  ## Backups via barman-cloud. See the cluster chart's values for configuration.
+  backups:
+    enabled: false
 
 ## Immich environment parameters
 
