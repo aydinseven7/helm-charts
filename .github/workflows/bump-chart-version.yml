@@ -1,0 +1,93 @@
+name: Bump Chart Version
+
+# Bumps a chart's Chart.yaml patch version on the PR branch when a PR touches
+# that chart's content but hasn't already changed its version (e.g. a Renovate
+# appVersion PR). The bump lands inside the PR, so tag-releases.yml just reads
+# it on merge.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "**/Chart.yaml"
+      - "**/values.yaml"
+      - "**/templates/**"
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    name: Bump changed chart versions
+    # The default token can't push to branches of PRs opened from forks.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # Check out the PR's source branch so the bump can be pushed back to it.
+          # Pushes made with the default GITHUB_TOKEN don't re-trigger workflows,
+          # so this can't loop on its own commit.
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Bump chart patch versions if not already bumped
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+
+          git fetch origin "$BASE_REF"
+          BASE="origin/${BASE_REF}"
+
+          # Map each changed Chart.yaml / values.yaml / templates file to its chart
+          # directory by walking up to the nearest Chart.yaml.
+          CHART_DIRS=$(git diff --name-only "${BASE}...HEAD" \
+            | { grep -E '(^|/)(Chart\.yaml|values\.yaml|templates/.+)$' || true; } \
+            | while IFS= read -r f; do
+                d=$(dirname "$f")
+                while [ "$d" != "." ] && [ ! -f "$d/Chart.yaml" ]; do d=$(dirname "$d"); done
+                if [ -f "$d/Chart.yaml" ]; then echo "$d"; fi
+              done | sort -u)
+
+          if [ -z "$CHART_DIRS" ]; then
+            echo "No chart content changed in this PR."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          BUMPED=0
+          while IFS= read -r dir; do
+            chart="${dir}/Chart.yaml"
+            name=$(grep -m1 '^name:' "$chart" | awk '{print $2}')
+
+            if ! git cat-file -e "${BASE}:${chart}" 2>/dev/null; then
+              echo "${name}: new chart in this PR, leaving its version alone."
+              continue
+            fi
+
+            base=$(git show "${BASE}:${chart}" | grep -m1 '^version:' | awk '{print $2}')
+            current=$(grep -m1 '^version:' "$chart" | awk '{print $2}')
+            if [ "$current" != "$base" ]; then
+              echo "${name}: version already changed in this PR (${base} -> ${current}); nothing to do."
+              continue
+            fi
+
+            IFS=. read -r major minor patch <<< "$current"
+            new="${major}.${minor}.$((patch + 1))"
+            sed -i "s/^version:.*/version: ${new}/" "$chart"
+            git add "$chart"
+            # One commit per chart, so git-cliff's per-chart --include-path changelog
+            # only picks up the bump for the chart it belongs to.
+            git commit -m "chore(${name}): bump chart version to ${new}"
+            echo "${name}: ${current} -> ${new}"
+            BUMPED=1
+          done <<< "$CHART_DIRS"
+
+          if [ "$BUMPED" = 1 ]; then
+            git push origin "HEAD:${HEAD_REF}"
+          fi

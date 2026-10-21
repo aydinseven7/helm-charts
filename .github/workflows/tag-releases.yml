@@ -7,8 +7,8 @@ name: Tag Chart Releases
 #   2. commits the changelog update to master
 #   3. creates and pushes the `<chart-name>/v<version>` tag on that commit
 #
-# The tag push is what triggers publish-charts.yml, so bumping a chart's
-# version and merging is now the whole release step.
+# The tag push is what triggers publish-charts.yml. bump-chart-version.yml
+# patch-bumps the version inside the PR, so merging is the whole release step.
 
 on:
   push:
