@@ -12,10 +12,17 @@ data:
   APPLICATION_PROTOCOL: {{ .Values.env.APPLICATION_PROTOCOL | quote }}
   PROMETHEUS_EXPORTER_ENABLED: {{ .Values.env.PROMETHEUS_EXPORTER_ENABLED | quote }}
   PROMETHEUS_EXPORTER_PORT: {{ .Values.env.PROMETHEUS_EXPORTER_PORT | quote }}
-  SIDEKIQ_METRICS_URL: {{ .Values.env.SIDEKIQ_METRICS_URL | quote }}
   SELF_HOSTED: "true"
+  {{- if .Values.sidekiq.enabled }}
+  SIDEKIQ_METRICS_URL: {{ .Values.env.SIDEKIQ_METRICS_URL | quote }}
   BACKGROUND_PROCESSING_CONCURRENCY: {{ .Values.env.BACKGROUND_PROCESSING_CONCURRENCY | quote }}
   RAILS_MAX_THREADS: {{ .Values.env.RAILS_MAX_THREADS | default .Values.env.BACKGROUND_PROCESSING_CONCURRENCY | quote }}
+  {{- else }}
+  BACKGROUND_PROCESSING_CONCURRENCY: {{ .Values.sidekiq.embedded.concurrency | quote }}
+  {{- with .Values.env.RAILS_MAX_THREADS }}
+  RAILS_MAX_THREADS: {{ . | quote }}
+  {{- end }}
+  {{- end }}
   {{- with .Values.env.REVERSE_GEOCODING_CONCURRENCY }}
   REVERSE_GEOCODING_CONCURRENCY: {{ . | quote }}
   {{- end }}

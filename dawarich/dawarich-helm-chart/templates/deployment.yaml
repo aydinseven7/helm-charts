@@ -18,6 +18,8 @@ spec:
         {{- include "dawarich.selectorLabels" . | nindent 8 }}
     spec:
       restartPolicy: Always
+      # lets running jobs finish or return to the queue on shutdown
+      terminationGracePeriodSeconds: 60
       containers:
       - name: {{ include "dawarich.fullname" . }}
         image: {{ .Values.image.repository }}:{{ include "dawarich.imageTag" . }}
@@ -92,6 +94,13 @@ spec:
               name: {{ .Values.metrics.serviceMonitor.credentialsSecret }}
               key: metrics-password
         {{- end }}
+        # run background jobs in the web process unless the sidekiq container is deployed
+        - name: SIDEKIQ_EMBEDDED
+          value: {{ not .Values.sidekiq.enabled | quote }}
+        {{- if not .Values.sidekiq.enabled }}
+        - name: WEB_CONCURRENCY
+          value: "0"
+        {{- end }}
         envFrom:
         - configMapRef:
             name: {{ include "dawarich.fullname" . }}-config
@@ -105,6 +114,7 @@ spec:
           - name: dawarich-db-data
             mountPath: /dawarich_db_data
 
+      {{- if .Values.sidekiq.enabled }}
       - name: {{ include "dawarich.fullname" . }}-sidekiq
         image: {{ .Values.image.repository }}:{{ include "dawarich.imageTag" . }}
         stdin: true
@@ -155,6 +165,7 @@ spec:
             mountPath: /var/app/tmp/imports/watched
           - name: dawarich-storage
             mountPath: /var/app/storage
+      {{- end }}
       volumes:
         - name: dawarich-public
           persistentVolumeClaim:

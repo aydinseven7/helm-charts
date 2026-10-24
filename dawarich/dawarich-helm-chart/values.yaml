@@ -86,10 +86,12 @@ env:
   RAILS_ENV: production
   ## Comma-separated list of allowed hostnames
   APPLICATION_HOSTS: dawarich.example.com
-  ## Number of concurrent Sidekiq workers
+  ## Number of concurrent Sidekiq workers (separate sidekiq container only;
+  ## see sidekiq.embedded.concurrency when sidekiq.enabled is false)
   BACKGROUND_PROCESSING_CONCURRENCY: 10
   ## ActiveRecord connection pool size; must be >= BACKGROUND_PROCESSING_CONCURRENCY.
-  ## Defaults to BACKGROUND_PROCESSING_CONCURRENCY when empty
+  ## Defaults to BACKGROUND_PROCESSING_CONCURRENCY when empty.
+  ## Left unset when sidekiq.enabled is false unless set explicitly
   RAILS_MAX_THREADS: ""
   ## Max Sidekiq workers on the reverse_geocoding queue. Dawarich defaults to a third
   ## of BACKGROUND_PROCESSING_CONCURRENCY when empty; raise it for a self-hosted Photon
@@ -103,6 +105,7 @@ env:
   ## Internal URL the web container uses to fetch Sidekiq metrics.
   ## Override when the Sidekiq container hostname differs from the docker-compose default
   ## (e.g. use http://localhost:9394/metrics on Kubernetes where both run in the same pod).
+  ## Not set when sidekiq.enabled is false; the web container then serves Sidekiq metrics itself.
   SIDEKIQ_METRICS_URL: "http://localhost:9394/metrics"
   ## Persist downloaded reverse-geocoding data locally
   STORE_GEODATA: "true"
@@ -110,6 +113,17 @@ env:
   RAILS_APPLICATION_CONFIG_HOSTS: ""
   ## Timezone used by the application
   timeZone: "UTC"
+
+## Background job parameters
+## ref: https://dawarich.app/docs/self-hosting/configuration/background-jobs/
+sidekiq:
+  ## true: run jobs in a separate sidekiq container in the pod (SIDEKIQ_EMBEDDED=false).
+  ## false: run jobs embedded in the web container (SIDEKIQ_EMBEDDED=true, WEB_CONCURRENCY=0).
+  ## Embedded jobs require Dawarich 1.17.0 or later.
+  enabled: true
+  embedded:
+    ## BACKGROUND_PROCESSING_CONCURRENCY for the web container when sidekiq.enabled is false
+    concurrency: 2
 
 ## SMTP parameters
 smtp:

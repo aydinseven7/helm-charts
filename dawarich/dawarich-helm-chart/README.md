@@ -13,12 +13,12 @@ helm install dawarich ./dawarich-helm-chart \
 
 This chart deploys Dawarich on a [Kubernetes](https://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
 
-The deployment runs two containers in a single Pod:
+By default the deployment runs two containers in a single Pod:
 
 - **web** – Rails server (`bin/rails server`), also serves the Prometheus metrics endpoint at `/metrics`
 - **sidekiq** – Background job worker; runs its own in-process metrics exporter on `PROMETHEUS_EXPORTER_PORT`
 
-Both containers share the same PersistentVolumes for uploads, watched imports, and public assets.
+Both containers share the same PersistentVolumes for uploads, watched imports, and public assets. Set `sidekiq.enabled: false` to drop the sidekiq container and run background jobs inside the web container instead (see [Background jobs](#background-jobs)).
 
 By default the chart also deploys a PostGIS-enabled [CloudNativePG](https://cloudnative-pg.io) `Cluster` through the [cloudnative-pg `cluster` chart](https://github.com/cloudnative-pg/charts/tree/main/charts/cluster), pulled in as a dependency under the `cnpg` key, and a [Valkey](https://valkey.io) instance (Redis-compatible, used for the Sidekiq queue and cache) through the official [valkey chart](https://github.com/valkey-io/valkey-helm) under the `valkey` key. Dawarich connects to both automatically (see [Database](#database) and [Valkey](#valkey)).
 
@@ -101,14 +101,21 @@ Note: PersistentVolumeClaims are **not** deleted automatically. Remove them manu
 | `env.APPLICATION_HOSTS`                 | Comma-separated list of hostnames Rails accepts requests for         | `dawarich.example.com` |
 | `env.RAILS_APPLICATION_CONFIG_HOSTS`    | Additional trusted hosts. Defaults to `ingress.host` when empty.     | `""`                   |
 | `env.APPLICATION_PROTOCOL`             | Protocol the app is served over (`http` or `https`)                  | `http`                 |
-| `env.BACKGROUND_PROCESSING_CONCURRENCY` | Number of concurrent Sidekiq workers                                 | `10`                   |
-| `env.RAILS_MAX_THREADS`                 | Database connection pool size. Defaults to `env.BACKGROUND_PROCESSING_CONCURRENCY` when empty. | `""`                   |
+| `env.BACKGROUND_PROCESSING_CONCURRENCY` | Number of concurrent Sidekiq workers in the separate sidekiq container | `10`                   |
+| `env.RAILS_MAX_THREADS`                 | Database connection pool size. Defaults to `env.BACKGROUND_PROCESSING_CONCURRENCY` when empty; left unset with `sidekiq.enabled: false` unless set explicitly. | `""`                   |
 | `env.REVERSE_GEOCODING_CONCURRENCY`     | Max workers on the reverse geocoding queue. Dawarich uses a third of `env.BACKGROUND_PROCESSING_CONCURRENCY` when empty. | `""`                   |
 | `env.STORE_GEODATA`                     | Persist downloaded reverse-geocoding data locally                    | `true`                 |
 | `env.timeZone`                          | Rails time zone string (e.g. `Europe/Berlin`)                        | `UTC`                  |
 | `env.PROMETHEUS_EXPORTER_ENABLED`       | Enable the Prometheus metrics endpoint on the web container          | `false`                |
 | `env.PROMETHEUS_EXPORTER_PORT`          | Port the in-process Sidekiq metrics exporter binds to                | `9394`                 |
-| `env.SIDEKIQ_METRICS_URL`               | URL the web container fetches Sidekiq metrics from. Override when Sidekiq's hostname differs from the docker-compose default (e.g. set `http://localhost:9394/metrics` on Kubernetes). | `http://localhost:9394/metrics` |
+| `env.SIDEKIQ_METRICS_URL`               | URL the web container fetches Sidekiq metrics from. Override when Sidekiq's hostname differs from the docker-compose default (e.g. set `http://localhost:9394/metrics` on Kubernetes). Not set with `sidekiq.enabled: false`. | `http://localhost:9394/metrics` |
+
+### Background job parameters
+
+| Name                           | Description                                                                                          | Value  |
+|--------------------------------|------------------------------------------------------------------------------------------------------|--------|
+| `sidekiq.enabled`              | Run jobs in a separate sidekiq container. When `false`, jobs run embedded in the web container.      | `true` |
+| `sidekiq.embedded.concurrency` | `BACKGROUND_PROCESSING_CONCURRENCY` for the web container when `sidekiq.enabled` is `false`          | `2`    |
 
 ### SMTP parameters
 
@@ -354,12 +361,21 @@ SMTP is optional. If left unconfigured, email sending will fail silently; all ot
 
 ### Application environment (`env`)
 
-The `env` block populates a ConfigMap that is loaded by both the web and Sidekiq containers. Key fields to configure:
+The `env` block populates a ConfigMap that is loaded by both the web and Sidekiq containers, so settings background jobs read (SMTP, reverse geocoding, `APPLICATION_HOSTS`) reach both. Key fields to configure:
 
 - **`APPLICATION_HOSTS`** and **`RAILS_APPLICATION_CONFIG_HOSTS`** must include every hostname the app is reachable at, or Rails will reject the request with a `blocked host` error. `RAILS_APPLICATION_CONFIG_HOSTS` defaults to `ingress.host` when left empty.
 - **`RAILS_ENV`** should be `production` for real deployments. Using `development` enables more verbose logging and disables some caching.
 - **`STORE_GEODATA`** controls whether reverse-geocoding data is cached locally. Set to `false` to rely solely on external APIs.
 - **`timeZone`** accepts any [Rails time zone string](https://api.rubyonrails.org/classes/ActiveSupport/TimeZone.html) (e.g. `Europe/Berlin`, `America/New_York`).
+
+### Background jobs
+
+Dawarich supports two ways of running background jobs ([upstream docs](https://dawarich.app/docs/self-hosting/configuration/background-jobs/)). Only one runs at a time:
+
+- **Separate sidekiq container** (`sidekiq.enabled: true`, the default) – a second container in the Pod runs `sidekiq` with `env.BACKGROUND_PROCESSING_CONCURRENCY` threads. The web container gets `SIDEKIQ_EMBEDDED=false`. Suited to larger instances or frequent big imports.
+- **Embedded** (`sidekiq.enabled: false`) – no sidekiq container; the web container runs jobs in-process with `SIDEKIQ_EMBEDDED=true`, `WEB_CONCURRENCY=0` and `BACKGROUND_PROCESSING_CONCURRENCY=sidekiq.embedded.concurrency`. `RAILS_MAX_THREADS` is left unset unless you set `env.RAILS_MAX_THREADS`. Imports share CPU and memory with the web server, so size `resources` accordingly. Requires Dawarich 1.17.0 or later.
+
+Valkey/Redis and PostgreSQL are required in both modes. The Pod gets a 60-second `terminationGracePeriodSeconds` so running jobs can finish or return to the queue on shutdown.
 
 ### Ingress
 
@@ -383,6 +399,8 @@ Since Dawarich 1.7.7, metrics are served in-process by each application:
 - The **Sidekiq container** runs its own in-process metrics exporter on `PROMETHEUS_EXPORTER_PORT` (default `9394`). The web container fetches these internally via `SIDEKIQ_METRICS_URL`.
 
 To enable metrics, set `metrics.enabled: true`. This sets `PROMETHEUS_EXPORTER_ENABLED=true` on both containers. On Kubernetes, `SIDEKIQ_METRICS_URL` defaults to `http://localhost:9394/metrics` since both containers share a Pod and are reachable via localhost.
+
+With `sidekiq.enabled: false` there is no Sidekiq container; the web container's `/metrics` includes the Sidekiq metrics directly and `SIDEKIQ_METRICS_URL` is not set.
 
 To also create a `ServiceMonitor` for the Prometheus Operator (or VictoriaMetrics VMAgent):
 
@@ -427,7 +445,7 @@ metrics:
 
 ### Resource requests and limits
 
-`resources` applies to **both** the web container and the Sidekiq container. Recommended starting values for a small instance:
+`resources` applies to **both** the web container and the Sidekiq container (only the web container with `sidekiq.enabled: false`). Recommended starting values for a small instance:
 
 ```yaml
 resources:
