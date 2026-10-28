@@ -18,6 +18,6 @@ dependencies:
     alias: cnpg
     condition: cnpg.enabled
   - name: valkey
-    version: 0.12.0
+    version: 0.12.1
     repository: https://valkey.io/valkey-helm/
     condition: valkey.enabled
