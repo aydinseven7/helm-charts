@@ -1,7 +1,7 @@
 apiVersion: v2
 name: immich
-version: 0.2.3
-appVersion: "v3.4.1"
+version: 0.2.4
+appVersion: "v3.4.2"
 description: A Helm chart for deploying the Immich server and Machine Learning components
 maintainers:
   - name: aydinseven7
